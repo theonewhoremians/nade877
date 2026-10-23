@@ -1,8 +1,104 @@
 'use client';
-import {useEffect,useState} from 'react';
-import {KeyRound,ArrowRight,ShieldCheck,Music2} from 'lucide-react';
-export default function Activate(){const [code,setCode]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
-useEffect(()=>{let active=true;void fetch('/api/license',{cache:'no-store'}).then(r=>{if(active&&r.ok)window.location.reload();}).catch(()=>{});return()=>{active=false;};},[]);
-async function activate(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{let deviceId=localStorage.getItem('editflow-device-id');if(!deviceId){deviceId=crypto.randomUUID();localStorage.setItem('editflow-device-id',deviceId);}const r=await fetch('/api/license',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessCode:code,deviceId})});const d=await r.json() as {error?:string};if(!r.ok)throw new Error(d.error);window.location.reload();}catch(e){setError(e instanceof Error?e.message:'Unable to activate.');}finally{setBusy(false);}}
-return <main className="activation"><div className="activation-card"><div className="brand"><Music2 size={26}/><b>Analytics Studio</b></div><div className="key-mark"><KeyRound size={30}/></div><h1>Enter Access Code</h1><p>Activate your code to open your video analytics editor.</p><form onSubmit={activate}><label htmlFor="code">Access code</label><input id="code" autoComplete="off" autoCapitalize="characters" placeholder="XXXX-XXXX-XXXX" value={code} maxLength={14} onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12).match(/.{1,4}/g)?.join('-')||'')} required/><button className="primary" disabled={busy||code.length!==14}>{busy?'Activating…':'Activate access'}<ArrowRight size={18}/></button>{error&&<p role="alert" className="error">{error}</p>}</form><div className="secure-note"><ShieldCheck size={16}/>Secured by Supabase</div><a href="/admin">Manage access codes</a></div></main>;}
 
+import { useEffect, useState } from 'react';
+import { ArrowRight, Check, KeyRound, Music2, ShieldCheck } from 'lucide-react';
+
+export default function Activate() {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void fetch('/api/license', { cache: 'no-store' })
+      .then((response) => {
+        if (active && response.ok) window.location.reload();
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function activate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      let deviceId = localStorage.getItem('editflow-device-id');
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem('editflow-device-id', deviceId);
+      }
+
+      const response = await fetch('/api/license', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessCode: code, deviceId }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error || 'Unable to activate this code.');
+      window.location.reload();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to activate your code.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="activation">
+      <section className="activation-card" aria-labelledby="activation-title">
+        <header className="activation-brand">
+          <div className="activation-brand-mark"><Music2 size={21} strokeWidth={2.4} /></div>
+          <div className="activation-brand-copy">
+            <span>CREATOR TOOLS</span>
+            <strong>Analytics Studio</strong>
+          </div>
+          <span className="activation-private"><ShieldCheck size={14} /> PRIVATE</span>
+        </header>
+
+        <div className="activation-heading">
+          <div className="activation-key-mark"><KeyRound size={23} /></div>
+          <p className="activation-eyebrow">YOUR WORKSPACE IS READY</p>
+          <h1 id="activation-title">Unlock your studio</h1>
+          <p className="activation-description">Enter the access code you received to open your video analytics workspace.</p>
+        </div>
+
+        <form className="activation-form" onSubmit={activate}>
+          <label htmlFor="code">Access code</label>
+          <div className="activation-code-field">
+            <KeyRound size={18} aria-hidden="true" />
+            <input
+              id="code"
+              autoComplete="off"
+              autoCapitalize="characters"
+              placeholder="XXXX-XXXX-XXXX"
+              value={code}
+              maxLength={14}
+              onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12).match(/.{1,4}/g)?.join('-') || '')}
+              aria-describedby={error ? 'activation-error' : 'activation-hint'}
+              required
+            />
+            {code.length === 14 && <Check className="activation-code-check" size={18} aria-label="Code format complete" />}
+          </div>
+          <div className="activation-field-meta">
+            <span id="activation-hint">12 characters, including dashes</span>
+            <span>{code.length}/14</span>
+          </div>
+          <button className="activation-submit" disabled={busy || code.length !== 14} type="submit">
+            {busy ? 'Activating your workspace…' : 'Continue to studio'}
+            <ArrowRight size={18} />
+          </button>
+          {error && <p id="activation-error" role="alert" className="activation-error">{error}</p>}
+        </form>
+
+        <footer className="activation-footer">
+          <span><ShieldCheck size={16} /> Your code is securely verified</span>
+          <a href="/admin">Admin sign in <ArrowRight size={14} /></a>
+        </footer>
+      </section>
+      <p className="activation-caption">A focused space for your next great edit.</p>
+    </main>
+  );
+}

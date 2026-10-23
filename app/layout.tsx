@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./device-frame.css";
+import "./console-ui.css";
 
 export const metadata: Metadata = {
   title: "Analytics Studio",
