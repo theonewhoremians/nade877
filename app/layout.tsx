@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./device-frame.css";
 
 export const metadata: Metadata = {
   title: "Analytics Studio",
@@ -20,7 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <div className="device-stage">
+          <div className="device-screen">{children}</div>
+        </div>
+      </body>
     </html>
   );
 }
