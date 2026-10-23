@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Analytics Studio",
-  description: "Edit your video analytics in a mobile studio with Edit Flow access-code protection.",
+  description: "Edit your video analytics in a mobile studio with Supabase access-code protection.",
   other: {
     "codex-preview": "development",
   },

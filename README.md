@@ -4,9 +4,23 @@ A responsive recreation of the TikTok video-analysis interface in the supplied r
 
 ## Access
 
-Uses the existing Edit Flow Supabase license functions. Activate with an existing access code. Licenses are device-bound, so a code already used on another origin may need a device reset from the admin panel. The admin page uses the existing Edit Flow admin key and manages the same license records. The key is kept only in memory and never saved.
+Access codes are verified by this project's Supabase Edge Functions. Codes bind to one device on first activation, and the admin page can create, search, enable, disable, extend, and reset licenses. Session tokens use HttpOnly cookies and refresh in the background. The admin key is entered for each session and is never saved by the page.
 
-License sessions use HttpOnly cookies and are verified by the existing server before rendering the editor. The editor rechecks every minute and before saving. Licensing secrets remain on the existing Supabase backend. Only its public endpoint and publishable key are included here.
+## Supabase setup
+
+Create or select a Supabase project, then sign in with `supabase login` and link it with `supabase link --project-ref YOUR_PROJECT_REF`. Apply the schema with `supabase db push`, set the function secrets below, and deploy the six functions listed in `supabase/config.toml`:
+
+```powershell
+supabase secrets set LICENSE_JWT_SECRET="<32+ random characters>" LICENSE_ADMIN_KEY="<long random key>" ALLOWED_ORIGIN="https://your-app.example"
+supabase functions deploy activate-license
+supabase functions deploy refresh-license
+supabase functions deploy license-status
+supabase functions deploy create-license
+supabase functions deploy reset-device
+supabase functions deploy manage-license
+```
+
+Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` in `.env.local` from the project's API settings. These app values are public; the service-role key, JWT secret, and admin key belong only in Supabase secrets.
 
 ## Data
 
@@ -15,7 +29,3 @@ Analytics are editable sample data reproduced from the reference, not live TikTo
 ## Development
 
 Node 22.13 or newer. Run npm run install:ci, npm run dev, and npm run build. Development uses localhost:5173.
-
-## Verification
-
-TypeScript and the production build pass. HTTP checks verified that missing sessions, malformed codes and unauthorized admin requests are rejected. The live Edit Flow backend rejects a deliberately invalid access code. Successful activation and admin mutations require the owner's real credentials and were not exercised. Browser interaction QA and WebMCP runtime validation were not performed.

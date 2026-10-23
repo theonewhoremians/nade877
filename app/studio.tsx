@@ -1,36 +1,195 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
-import {ArrowLeft,UserStar,Play,Heart,MessageCircle,Forward,Bookmark,Info,Pencil,Download,Upload,LogOut,ChevronRight,Check,ImagePlus,Eye} from 'lucide-react';
-import {Tabs,TabsList,TabsTrigger,TabsContent} from '@/components/ui/tabs';
-import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
-import {Switch} from '@/components/ui/switch';
-import {Progress} from '@/components/ui/progress';
-import {defaultProject,projectSchema,type Project} from '@/lib/project';
-const ageLabels=['18 - 24','25 - 34','35 - 44','45 - 54','55+'];
-const key='analytics-studio-project-v1';
-function Bars({rows}:{rows:{name:string,value:number}[]}){return <div className="bar-list">{rows.map((r,i)=><div key={i}><div className="bar-label"><span>{r.name}</span><b>{r.value}%</b></div><Progress value={r.value} aria-label={`${r.name}: ${r.value}%`} className="demographic-bar"/></div>)}</div>}
-export default function Studio(){
- const [p,setP]=useState<Project>(defaultProject),[draft,setDraft]=useState<Project>(defaultProject),[tab,setTab]=useState('Overview'),[editing,setEditing]=useState(false),[notice,setNotice]=useState(''),[detail,setDetail]=useState(''),[clean,setClean]=useState(false),[valid,setValid]=useState(true),[busy,setBusy]=useState(false);const upload=useRef<HTMLInputElement>(null);
- useEffect(()=>{try{const saved=localStorage.getItem(key);if(saved){const parsed=projectSchema.safeParse(JSON.parse(saved));if(parsed.success)setP(parsed.data);}}catch{setNotice('Your saved project could not be loaded.');}},[]);
- useEffect(()=>{async function check(){try{const r=await fetch('/api/license');if(!r.ok)setValid(false);}catch{setValid(false);}}const timer=setInterval(check,60000);return()=>clearInterval(timer);},[]);
- useEffect(()=>{const ctx=(document as unknown as {modelContext?:{registerTool:(tool:unknown,options:unknown)=>Promise<void>}}).modelContext;if(!ctx)return;const controller=new AbortController();Promise.resolve(ctx.registerTool({name:'navigate_analytics_tab',description:'Switch the visible analytics tab.',inputSchema:{type:'object',properties:{tab:{type:'string',enum:['Inspiration','Overview','Viewers','Engagement']}},required:['tab'],additionalProperties:false},execute:(input:unknown)=>{const t=(input as {tab?:string})?.tab;if(!valid||!t||!['Inspiration','Overview','Viewers','Engagement'].includes(t))throw new Error('Invalid tab or inactive session.');setTab(t);return {tab:t};}},{signal:controller.signal})).catch(()=>{});return()=>controller.abort();},[valid]);
- async function save(){setBusy(true);try{const check=await fetch('/api/license');if(!check.ok){setValid(false);return;}const parsed=projectSchema.safeParse(draft);if(!parsed.success)throw new Error(parsed.error.issues[0].message);localStorage.setItem(key,JSON.stringify(parsed.data));setP(parsed.data);setEditing(false);setNotice('Saved on this device.');}catch(e){setNotice(e instanceof Error?e.message:'Save failed.');}finally{setBusy(false);}}
- function openEditor(){setDraft(structuredClone(p));setNotice('');setEditing(true);}
- function exportProject(){const url=URL.createObjectURL(new Blob([JSON.stringify(p,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='video-analytics.json';a.click();URL.revokeObjectURL(url);setNotice('Project exported.');}
- async function importProject(file?:File){if(!file)return;try{if(file.size>3000000)throw new Error('Choose a project file smaller than 3 MB.');const parsed=projectSchema.safeParse(JSON.parse(await file.text()));if(!parsed.success)throw new Error('This project file contains invalid analytics.');setDraft(parsed.data);setEditing(true);setNotice('Review the imported details, then save.');}catch(e){setNotice(e instanceof Error?e.message:'Import failed.');}}
- async function cover(file?:File){if(!file)return;if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>2000000){setNotice('Choose a PNG, JPG or WebP smaller than 2 MB.');return;}const reader=new FileReader();reader.onload=()=>setDraft(d=>({...d,cover:String(reader.result)}));reader.readAsDataURL(file);}
- function field(k:keyof Project,label:string,type='text'){return <label key={k}>{label}<input type={type} min={type==='number'?0:undefined} step="any" value={String(draft[k])} onChange={e=>setDraft(d=>({...d,[k]:type==='number'?Number(e.target.value):e.target.value}))}/></label>}
- if(!valid)return <main className="activation"><div className="activation-card"><h1>Check your access</h1><p>Your session expired or could not be verified. Re-enter your access code to continue.</p><button className="primary" onClick={()=>window.location.reload()}>Continue to activation</button></div></main>;
- return <><aside className={`editor-toolbar ${clean?'is-clean':''}`}><div className="toolbar-brand"><b>Analytics Studio</b><span>Video analytics editor</span></div>{clean?<button onClick={()=>setClean(false)}><Pencil size={16}/>Show editor</button>:<><button className="primary" onClick={openEditor}><Pencil size={16}/>Edit details</button><button onClick={()=>setClean(true)}><Eye size={16}/>Clean view</button><button onClick={exportProject}><Download size={16}/>Export</button><button onClick={()=>upload.current?.click()}><Upload size={16}/>Import</button><a href="/admin">Access codes</a><button aria-label="Sign out" onClick={async()=>{await fetch('/api/license',{method:'DELETE'});window.location.reload();}}><LogOut size={16}/></button></>}<input ref={upload} type="file" accept="application/json" hidden onChange={e=>{void importProject(e.target.files?.[0]);e.target.value='';}}/></aside>
- <main className="phone"><header className="app-header"><button className="icon-button" aria-label="Back to video" onClick={()=>setDetail('video')}><ArrowLeft/></button><h1>Video an...</h1><button className="studio-pill" onClick={openEditor}><UserStar size={16}/>TikTok Studio</button></header>
- <section className="video-summary"><button className="cover-button" onClick={()=>setDetail('video')}><img src={p.cover} alt={p.title}/><span>{p.duration}s</span></button><p>Posted on {p.date}</p><div className="counts">{[Play,Heart,MessageCircle,Forward,Bookmark].map((I,i)=><div key={i}><I aria-label={['Views','Likes','Comments','Shares','Saves'][i]}/><span>{[p.views,p.likes,p.comments,p.shares,p.saves][i].toLocaleString()}</span></div>)}</div></section>
- <Tabs value={tab} onValueChange={setTab}><TabsList variant="line" className="analysis-tabs">{['Inspiration','Overview','Viewers','Engagement'].map(t=><TabsTrigger key={t} value={t}>{t}{t==='Inspiration'&&<i className="pink-dot"/>}</TabsTrigger>)}</TabsList>
- <TabsContent value="Overview">{p.restricted&&<button className="notice" onClick={()=>setDetail('restriction')}>Your video is not eligible for recommendation in the For You feed. If you disagree with the content restriction, you can appeal.<ChevronRight size={22}/></button>}<section className="panel"><h2>Key metrics <Info/></h2><p className="muted">Updated in real time.</p><div className="metrics">{[['Video views',Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(p.views)],['Total play time',p.playTime],['Average watch time',`${p.watchTime}s`],['Watched full video',`${p.completion}%`],['New followers',String(p.followers)]].map(([label,value],i)=><button className={i===0?'selected':''} key={label} onClick={openEditor}><span>{label}</span><strong>{value}</strong></button>)}</div></section></TabsContent>
- <TabsContent value="Viewers"><section className="panel"><h2>Total viewers <Info/></h2><p className="muted viewer-total">{p.totalViewers}</p></section><section className="panel"><h2>Viewer types <Info/></h2><div className="viewer-placeholder"><div className="split"><b>-%</b><b>-%</b></div><div className="placeholder-bar"/><div className="split"><span>-</span><span>-</span></div></div><div className="split"><b>{p.nonFollowers}%</b><b>{100-p.nonFollowers}%</b></div><Progress value={p.nonFollowers} aria-label="Non-followers" className="demographic-bar"/><div className="split"><span>Non-followers</span><span>Followers</span></div></section><section className="panel"><h2>Gender</h2><div className="half-chart" role="img" aria-label={`Male ${p.male}%, Female ${p.female}%, Other ${p.other}%`}><div style={{background:`conic-gradient(from -90deg,#0078d4 0deg ${p.male*1.8}deg,#78b7e5 ${p.male*1.8}deg ${(p.male+p.female)*1.8}deg,#cbe3f5 ${(p.male+p.female)*1.8}deg 180deg,transparent 180deg)`}}/></div>{[['Male',p.male,'#0078d4'],['Female',p.female,'#78b7e5'],['Other',p.other,'#cbe3f5']].map(([name,value,color])=><div className="gender-row" key={name}><i style={{background:String(color)}}/><strong>{name}</strong><b>{value}%</b></div>)}</section><section className="panel"><h2>Age</h2><Bars rows={ageLabels.map((name,i)=>({name,value:p.ages[i]}))}/></section><section className="panel"><h2>Locations <Info/></h2><Bars rows={p.locations}/></section></TabsContent>
- <TabsContent value="Engagement"><section className="panel"><h2>Engagement <Info/></h2><div className="metrics">{[['Likes',p.likes],['Comments',p.comments],['Shares',p.shares],['Saves',p.saves]].map(([name,n])=><button key={name} onClick={openEditor}><span>{name}</span><strong>{n.toLocaleString()}</strong></button>)}</div></section></TabsContent>
- <TabsContent value="Inspiration"><section className="panel"><h2>Inspiration</h2><p className="muted">No inspiration data was included in this video.</p><button className="primary" onClick={()=>setTab('Overview')}>View video metrics</button></section></TabsContent></Tabs><div className="home-indicator"/></main>
- {!editing&&notice&&<div className="save-toast" role="status"><Check size={16}/>{notice}<button aria-label="Dismiss" onClick={()=>setNotice('')}>×</button></div>}
- <Dialog open={editing} onOpenChange={setEditing}><DialogContent className="edit-dialog"><DialogTitle>Edit video analytics</DialogTitle><DialogDescription>Changes stay on this device. Export a project to keep a backup.</DialogDescription><div className="edit-scroll"><h3>Video details</h3>{field('title','Video title')}{field('date','Posted on')}<div className="field-grid">{field('duration','Duration (seconds)','number')}{field('totalViewers','Total viewers')}</div><label className="upload-cover"><ImagePlus size={18}/>Replace thumbnail<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>void cover(e.target.files?.[0])}/></label><h3>Key metrics</h3><div className="field-grid">{([['views','Video views'],['likes','Likes'],['comments','Comments'],['shares','Shares'],['saves','Saves'],['followers','New followers'],['watchTime','Average watch time (s)'],['completion','Watched full video (%)']] as [keyof Project,string][]).map(([k,l])=>field(k,l,'number'))}{field('playTime','Total play time')}</div><label className="switch-label">Show recommendation notice<Switch checked={draft.restricted} onCheckedChange={restricted=>setDraft(d=>({...d,restricted}))}/></label><h3>Viewer types</h3>{field('nonFollowers','Non-followers (%)','number')}<h3>Gender · total 100%</h3><div className="field-grid">{field('male','Male (%)','number')}{field('female','Female (%)','number')}{field('other','Other (%)','number')}</div><h3>Age · total 100%</h3><div className="field-grid">{ageLabels.map((name,i)=><label key={name}>{name} (%)<input type="number" min="0" max="100" step="any" value={draft.ages[i]} onChange={e=>setDraft(d=>({...d,ages:d.ages.map((n,j)=>i===j?Number(e.target.value):n)}))}/></label>)}</div><h3>Locations</h3>{draft.locations.map((r,i)=><div className="field-grid" key={i}><label>Location {i+1}<input value={r.name} onChange={e=>setDraft(d=>({...d,locations:d.locations.map((l,j)=>i===j?{...l,name:e.target.value}:l)}))}/></label><label>Viewers (%)<input type="number" min="0" max="100" step="any" value={r.value} onChange={e=>setDraft(d=>({...d,locations:d.locations.map((l,j)=>i===j?{...l,value:Number(e.target.value)}:l)}))}/></label></div>)}</div>{notice&&<p role="status" className="error">{notice}</p>}<button className="primary" disabled={busy} onClick={()=>void save()}>{busy?'Saving…':'Save changes'}</button></DialogContent></Dialog>
- <Dialog open={!!detail} onOpenChange={v=>{if(!v)setDetail('');}}><DialogContent><DialogTitle>{detail==='video'?p.title:'Recommendation notice'}</DialogTitle><DialogDescription>{detail==='video'?`Posted on ${p.date} · ${p.duration}s`:'This notice reproduces the supplied reference. It is editable project content, not a live TikTok decision.'}</DialogDescription>{detail==='video'&&<img className="detail-cover" src={p.cover} alt={p.title}/>}<button className="primary" onClick={()=>{setDetail('');if(detail==='video')setTab('Overview');else openEditor();}}>{detail==='video'?'Video analysis':'Edit notice'}</button></DialogContent></Dialog>
- </>;
+
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import Image from 'next/image';
+import { ArrowLeft, UserStar, Play, Heart, MessageCircle, Forward, Bookmark, Info, ChevronRight, Check } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { defaultProject, projectSchema, type Project } from '@/lib/project';
+
+const ageLabels = ['18 - 24', '25 - 34', '35 - 44', '45 - 54', '55+'];
+const projectKey = 'analytics-studio-project-v1';
+const EditingContext = createContext(false);
+type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'followers' | 'nonFollowers' | 'male' | 'female' | 'other';
+type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
+
+function subscribeProject(update: () => void) {
+  window.addEventListener('storage', update);
+  window.addEventListener(projectKey, update);
+  return () => {
+    window.removeEventListener('storage', update);
+    window.removeEventListener(projectKey, update);
+  };
+}
+function readProject() { return localStorage.getItem(projectKey) ?? ''; }
+function parseProject(raw: string) {
+  try {
+    const parsed = projectSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : defaultProject;
+  } catch { return defaultProject; }
+}
+function emptyProject() { return ''; }
+
+function InlineValue({ value, label, onSave, type = 'number', display, step = 1, min = 0, max, className = '' }: {
+  value: string | number;
+  label: string;
+  onSave: (value: string | number) => void;
+  type?: 'number' | 'text';
+  display?: string;
+  step?: number | 'any';
+  min?: number;
+  max?: number;
+  className?: string;
+}) {
+  const editable = useContext(EditingContext);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+  const cancel = useRef(false);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (editing) {
+      input.current?.focus();
+      input.current?.select();
+    }
+  }, [editing]);
+  function commit() {
+    setEditing(false);
+    const next = type === 'number' ? Number(draft) : draft.trim();
+    if (type === 'number' && !Number.isFinite(next)) return;
+    if (String(next) !== String(value)) onSave(next);
+  }
+  if (editing && editable) return <input ref={input} className={`inline-input ${className}`} aria-label={label} type={type} min={type === 'number' ? min : undefined} max={type === 'number' ? max : undefined} step={type === 'number' ? step : undefined} value={draft} onChange={e => setDraft(e.target.value)} onBlur={() => { if (cancel.current) { cancel.current = false; return; } commit(); }} onKeyDown={e => {
+    if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
+    if (e.key === 'Escape') { cancel.current = true; setDraft(String(value)); setEditing(false); }
+  }} />;
+  if (!editable) return <span className={`inline-value view-value ${className}`}>{display ?? value}</span>;
+  return <button type="button" className={`inline-value ${className}`} aria-label={`Edit ${label}: ${display ?? value}`} onClick={e => { e.stopPropagation(); setDraft(String(value)); setEditing(true); }}>{display ?? value}</button>;
+}
+
+function Bars({ rows, onEdit }: { rows: { name: string; value: number }[]; onEdit: (index: number, value: number) => void }) {
+  return <div className="bar-list">{rows.map((row, index) => <div key={index}><div className="bar-label"><span>{row.name}</span><b><InlineValue value={row.value} label={`${row.name} viewers percentage`} step="any" max={100} onSave={value => onEdit(index, Number(value))} />%</b></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
+}
+
+export default function Studio() {
+  const rawProject = useSyncExternalStore(subscribeProject, readProject, emptyProject);
+  const project = useMemo(() => rawProject ? parseProject(rawProject) : defaultProject, [rawProject]);
+  const [tab, setTab] = useState('Overview');
+  const [editMode, setEditMode] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [valid, setValid] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const coverInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function check() {
+      try { if (!(await fetch('/api/license')).ok) setValid(false); }
+      catch { setValid(false); }
+    }
+    const timer = setInterval(check, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const context = (document as unknown as { modelContext?: { registerTool: (tool: unknown, options: unknown) => Promise<void> } }).modelContext;
+    if (!context) return;
+    const controller = new AbortController();
+    Promise.resolve(context.registerTool({
+      name: 'navigate_analytics_tab',
+      description: 'Switch the visible analytics tab.',
+      inputSchema: { type: 'object', properties: { tab: { type: 'string', enum: ['Inspiration', 'Overview', 'Viewers', 'Engagement'] } }, required: ['tab'], additionalProperties: false },
+      execute: (input: unknown) => {
+        const selected = (input as { tab?: string })?.tab;
+        if (!valid || !selected || !['Inspiration', 'Overview', 'Viewers', 'Engagement'].includes(selected)) throw new Error('Invalid tab or inactive session.');
+        setTab(selected);
+        return { tab: selected };
+      },
+    }, { signal: controller.signal })).catch(() => {});
+    return () => controller.abort();
+  }, [valid]);
+
+  async function persist(next: Project) {
+    const parsed = projectSchema.safeParse(next);
+    if (!parsed.success) { setNotice(parsed.error.issues[0].message); return; }
+    setBusy(true);
+    setNotice('Saving…');
+    try {
+      if (!(await fetch('/api/license')).ok) { setValid(false); throw new Error('Access expired.'); }
+      localStorage.setItem(projectKey, JSON.stringify(parsed.data));
+      window.dispatchEvent(new Event(projectKey));
+      setNotice('Saved on this device.');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Save failed.'); }
+    finally { setBusy(false); }
+  }
+
+  function editNumber(field: NumberField, value: number) {
+    const next = { ...project, [field]: value } as Project;
+    if (field === 'male') next.other = 100 - next.male - next.female;
+    if (field === 'female') next.other = 100 - next.male - next.female;
+    if (field === 'other') next.female = 100 - next.male - next.other;
+    void persist(next);
+  }
+  function editText(field: TextField, value: string) { void persist({ ...project, [field]: value }); }
+  function editAge(index: number, value: number) {
+    const ages = [...project.ages];
+    ages[index] = value;
+    const balanceIndex = index === ages.length - 1 ? ages.length - 2 : ages.length - 1;
+    ages[balanceIndex] = 100 - ages.reduce((total, age, i) => total + (i === balanceIndex ? 0 : age), 0);
+    void persist({ ...project, ages });
+  }
+  function editLocation(index: number, value: number) {
+    const locations = project.locations.map((location, i) => i === index ? { ...location, value } : location);
+    void persist({ ...project, locations });
+  }
+  async function replaceCover(file?: File) {
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 2_000_000) {
+      setNotice('Choose a PNG, JPG or WebP smaller than 2 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => { void persist({ ...project, cover: String(reader.result) }); };
+    reader.readAsDataURL(file);
+  }
+
+  if (!valid) return <main className="activation"><div className="activation-card"><h1>Check your access</h1><p>Your session expired or could not be verified. Re-enter your access code to continue.</p><button className="primary" onClick={() => window.location.reload()}>Continue to activation</button></div></main>;
+
+  return <EditingContext.Provider value={editMode}><main className="phone">
+    <header className="app-header">
+      <button className="icon-button" aria-label="Back to overview" onClick={() => setTab('Overview')}><ArrowLeft /></button>
+      <h1><InlineValue value={project.title} label="Video title" type="text" className="inline-title" onSave={value => editText('title', String(value))} /></h1>
+      <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={() => setEditMode(current => !current)}><UserStar size={16} />TikTok Studio</button>
+    </header>
+    <section className="video-summary">
+      <div className="cover-button"><button className="cover-image" disabled={!editMode} onClick={() => coverInput.current?.click()} aria-label="Replace video thumbnail"><Image src={project.cover} alt={project.title} width={100} height={133} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
+      <input ref={coverInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { void replaceCover(e.target.files?.[0]); e.target.value = ''; }} />
+      <p>Posted on <InlineValue value={project.date} label="Post date" type="text" onSave={value => editText('date', String(value))} /></p>
+      <div className="counts">{[Play, Heart, MessageCircle, Forward, Bookmark].map((Icon, index) => <div key={index}><Icon aria-label={['Views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} /><InlineValue value={[project.views, project.likes, project.comments, project.shares, project.saves][index]} label={['Video views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} display={[project.views, project.likes, project.comments, project.shares, project.saves][index].toLocaleString()} onSave={value => editNumber((['views', 'likes', 'comments', 'shares', 'saves'] as NumberField[])[index], Number(value))} /></div>)}</div>
+    </section>
+
+    <Tabs value={tab} onValueChange={setTab}>
+      <TabsList variant="line" className="analysis-tabs">{['Inspiration', 'Overview', 'Viewers', 'Engagement'].map(item => <TabsTrigger key={item} value={item}>{item}{item === 'Inspiration' && <i className="pink-dot" />}</TabsTrigger>)}</TabsList>
+      <TabsContent value="Overview">
+        {project.restricted && <div className="notice">Your video is not eligible for recommendation in the For You feed. If you disagree with the content restriction, you can appeal.<ChevronRight size={22} /></div>}
+        <section className="panel"><h2>Key metrics <Info /></h2><p className="muted">{editMode ? 'Tap a value to edit it here.' : 'Tap TikTok Studio to edit video details.'}</p>
+          <div className="metrics">
+            <div className="selected"><span>Video views</span><strong><InlineValue value={project.views} label="Video views" display={Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(project.views)} onSave={value => editNumber('views', Number(value))} /></strong></div>
+            <div><span>Total play time</span><strong><InlineValue value={project.playTime} label="Total play time" type="text" onSave={value => editText('playTime', String(value))} /></strong></div>
+            <div><span>Average watch time</span><strong><InlineValue value={project.watchTime} label="Average watch time in seconds" display={`${project.watchTime}s`} step="any" onSave={value => editNumber('watchTime', Number(value))} /></strong></div>
+            <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} onSave={value => editNumber('completion', Number(value))} /></strong></div>
+            <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" onSave={value => editNumber('followers', Number(value))} /></strong></div>
+          </div>
+        </section>
+      </TabsContent>
+      <TabsContent value="Viewers">
+        <section className="panel"><h2>Total viewers <Info /></h2><p className="muted viewer-total"><InlineValue value={project.totalViewers} label="Total viewers" type="text" onSave={value => editText('totalViewers', String(value))} /></p></section>
+        <section className="panel"><h2>Viewer types <Info /></h2><div className="viewer-placeholder"><div className="split"><b>-%</b><b>-%</b></div><div className="placeholder-bar" /><div className="split"><span>-</span><span>-</span></div></div><div className="split"><b><InlineValue value={project.nonFollowers} label="Non-followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', Number(value))} />%</b><b><InlineValue value={100 - project.nonFollowers} label="Followers percentage" onSave={value => editNumber('nonFollowers', 100 - Number(value))} /></b></div><Progress value={project.nonFollowers} aria-label="Non-followers" className="demographic-bar" /><div className="split"><span>Non-followers</span><span>Followers</span></div></section>
+        <section className="panel"><h2>Gender</h2><div className="half-chart" role="img" aria-label={`Male ${project.male}%, Female ${project.female}%, Other ${project.other}%`}><div style={{ background: `conic-gradient(from -90deg,#0078d4 0deg ${project.male * 1.8}deg,#78b7e5 ${project.male * 1.8}deg ${(project.male + project.female) * 1.8}deg,#cbe3f5 ${(project.male + project.female) * 1.8}deg 180deg,transparent 180deg)` }} /></div>{[['Male', 'male', project.male, '#0078d4'], ['Female', 'female', project.female, '#78b7e5'], ['Other', 'other', project.other, '#cbe3f5']].map(([label, field, value, color]) => <div className="gender-row" key={String(field)}><i style={{ background: String(color) }} /><strong>{label}</strong><b><InlineValue value={Number(value)} label={`${label} percentage`} step="any" max={100} onSave={next => editNumber(String(field) as NumberField, Number(next))} />%</b></div>)}</section>
+        <section className="panel"><h2>Age</h2><Bars rows={ageLabels.map((name, index) => ({ name, value: project.ages[index] }))} onEdit={editAge} /></section>
+        <section className="panel"><h2>Locations <Info /></h2><Bars rows={project.locations} onEdit={editLocation} /></section>
+      </TabsContent>
+      <TabsContent value="Engagement"><section className="panel"><h2>Engagement <Info /></h2><div className="metrics">{[['Likes', 'likes', project.likes], ['Comments', 'comments', project.comments], ['Shares', 'shares', project.shares], ['Saves', 'saves', project.saves]].map(([label, field, value]) => <div key={String(field)}><span>{label}</span><strong><InlineValue value={Number(value)} label={String(label)} onSave={next => editNumber(String(field) as NumberField, Number(next))} /></strong></div>)}</div></section></TabsContent>
+      <TabsContent value="Inspiration"><section className="panel"><h2>Inspiration</h2><p className="muted">No inspiration data was included in this video.</p><button className="primary" onClick={() => setTab('Overview')}>View video metrics</button></section></TabsContent>
+    </Tabs>
+    {!busy && notice && <div className="save-toast" role="status"><Check size={16} />{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}>×</button></div>}
+  </main></EditingContext.Provider>;
 }

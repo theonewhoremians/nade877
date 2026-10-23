@@ -1,0 +1,19 @@
+project_id = "lfoilipcmifiulpeihvw"
+
+[functions.activate-license]
+verify_jwt = false
+
+[functions.refresh-license]
+verify_jwt = false
+
+[functions.license-status]
+verify_jwt = false
+
+[functions.create-license]
+verify_jwt = false
+
+[functions.reset-device]
+verify_jwt = false
+
+[functions.manage-license]
+verify_jwt = false
