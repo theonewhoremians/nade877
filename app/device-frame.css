@@ -1,9 +1,9 @@
 /* Keep the app in a portrait phone viewport on large screens. */
 body{height:100dvh;overflow:hidden}
 .device-stage{height:100dvh;min-height:100dvh;display:grid;place-items:center;padding:24px;overflow:hidden}
-.device-screen{position:relative;width:min(430px,100%);height:min(932px,calc(100dvh - 48px));min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;background:#f3f3f3;border-radius:26px;box-shadow:0 18px 60px #00000020;transform:translateZ(0);scrollbar-width:none}
+.device-screen{position:relative;width:360px;height:800px;zoom:min(1,calc((100dvh - 48px)/800px),calc((100vw - 48px)/360px));min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;background:#f3f3f3;border-radius:26px;box-shadow:0 18px 60px #00000020;transform:translateZ(0);scrollbar-width:none}
 .device-screen::-webkit-scrollbar{display:none}
 .phone{width:100%;max-width:none;min-height:100%;box-shadow:none}
 .activation{min-height:100%}
 .admin{max-width:none}
-@media(max-width:600px){body{background:#f3f3f3}.device-stage{padding:0}.device-screen{width:100vw;height:100dvh;border-radius:0;box-shadow:none}.phone{max-width:none}}
+@media(max-width:600px){body{background:#f3f3f3}.device-stage{padding:0}.device-screen{width:100vw;height:100dvh;zoom:1;border-radius:0;box-shadow:none}.phone{max-width:none}}

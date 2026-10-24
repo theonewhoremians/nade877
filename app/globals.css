@@ -7,3 +7,41 @@
 @media(max-width:600px){body{background:#f3f3f3}.editor-toolbar{padding:10px;gap:5px}.toolbar-brand{width:100%;margin-bottom:4px}.editor-toolbar button,.editor-toolbar a{padding:7px;font-size:12px}.editor-toolbar.is-clean{bottom:8px;right:8px;opacity:.7}.editor-toolbar.is-clean button{font-size:12px}.phone{max-width:100%;box-shadow:none}.app-header h1{font-size:20px}.panel{padding:20px}.analysis-tabs{gap:0!important}.analysis-tabs button{font-size:16px!important}.activation-card{padding:26px}.field-grid{gap:8px}.metrics strong{font-size:clamp(21px,6.2vw,29px)}.admin{margin:0;padding:14px}}
 .inline-value{font:inherit;color:inherit;background:transparent;border:0;border-radius:3px;padding:0;margin:0;line-height:inherit;text-align:inherit;cursor:text}.inline-value:hover,.inline-value:focus-visible{outline:1px dotted #0078d4;outline-offset:2px}.inline-input{font:inherit;color:inherit;background:#fff;border:1px solid #0078d4;border-radius:5px;padding:1px 4px;max-width:100%;width:7ch;text-align:inherit}.inline-input:focus-visible{outline:2px solid #79bced;outline-offset:1px}.inline-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.cover-button{position:relative;width:100px;height:133px}.cover-image{display:block;width:100px;height:133px;border:0;padding:0;background:transparent;border-radius:9px;overflow:hidden}.cover-button>span{z-index:1}.metrics>.selected{border-color:#3097d0;background:#f4fafb}
 .inline-value.view-value{cursor:default}.inline-value.view-value:hover{outline:0}.inline-input[type=number]{appearance:textfield;-moz-appearance:textfield}.inline-input[type=number]::-webkit-inner-spin-button,.inline-input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.studio-pill{font-family:inherit;color:inherit;cursor:pointer}.studio-pill.is-editing{border-color:#0078d4;background:#eaf5fe;color:#0078d4}.cover-image:disabled{opacity:1;cursor:default}.cover-image:not(:disabled){cursor:pointer}
+
+/* Compact phone proportions from the reference screen. */
+.app-header{height:52px;padding:8px 16px;gap:8px}
+.app-header h1{font-size:16px;text-align:center}
+.icon-button svg{width:20px;height:20px}
+.studio-pill{font-size:10px;padding:6px 9px;gap:3px}
+.studio-pill svg{width:12px;height:12px}
+.video-summary{padding:8px 12px 10px}
+.video-summary img,.cover-button,.cover-image{width:80px;height:80px}
+.video-summary img,.cover-image{border-radius:6px}
+.cover-button>span{bottom:4px;font-size:13px}
+.video-summary p{font-size:14px;line-height:18px;margin:10px 0 16px}
+.counts>div{gap:8px;font-size:14px;line-height:18px}
+.counts svg{width:16px;height:16px}
+.analysis-tabs{top:52px;height:42px!important;gap:6px!important;padding:0 10px!important}
+.analysis-tabs{scrollbar-width:none}
+.analysis-tabs::-webkit-scrollbar{display:none}
+.analysis-tabs button{font-size:14px!important;padding:8px 8px!important}
+.analysis-tabs button[data-state=active]{border-bottom-width:2px}
+.panel{margin:8px;padding:16px}
+.panel h2{font-size:16px;gap:5px;margin:2px 0 4px}
+.panel h2 svg{width:12px;height:12px}
+.muted{font-size:12px;margin:0 0 18px}
+.metrics{gap:8px}
+.metrics>div,.metrics>button{border-radius:8px;padding:12px;}
+.metrics span{font-size:12px}
+.metrics strong{font-size:22px;line-height:1.2;margin-top:6px}
+
+@media(max-width:600px){.app-header h1{font-size:16px}.panel{padding:16px}.analysis-tabs{gap:6px!important}.analysis-tabs button{font-size:14px!important}}
+.cover-image img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.cover-button>span{position:absolute;left:0;right:0;bottom:4px;z-index:1;padding:2px 0;background:linear-gradient(transparent,#0009);color:#fff;font-size:13px;line-height:16px;font-weight:600;text-align:center}
+.cover-button>span .inline-value{color:#fff;text-shadow:0 1px 3px #000}
+.views-chart{height:128px;margin:14px -2px 0}
+.views-chart svg{display:block;width:100%;height:100%;overflow:visible}
+.chart-grid{fill:none;stroke:#d8d8d8;stroke-width:1;stroke-dasharray:3 4}
+.chart-area{fill:#e5efff}
+.chart-line{fill:none;stroke:#4b91f5;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chart-axis{fill:#888;font:10px Arial,Helvetica,sans-serif}

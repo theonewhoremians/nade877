@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, UserStar, Play, Heart, MessageCircle, Forward, Bookmark, Info, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeft, UserStar, Play, Heart, MessageCircle, Forward, Bookmark, Info, Check } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { defaultProject, projectSchema, type Project } from '@/lib/project';
@@ -159,12 +159,12 @@ export default function Studio() {
 
   return <EditingContext.Provider value={editMode}><main className="phone">
     <header className="app-header">
-      <button className="icon-button" aria-label="Back to overview" onClick={() => setTab('Overview')}><ArrowLeft /></button>
-      <h1><InlineValue value={project.title} label="Video title" type="text" className="inline-title" onSave={value => editText('title', String(value))} /></h1>
-      <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={() => setEditMode(current => !current)}><UserStar size={16} />TikTok Studio</button>
+      <button className="icon-button" aria-label="Back to overview" onClick={() => setTab('Overview')}><ArrowLeft size={20} /></button>
+      <h1><InlineValue value={project.title} display="Video analytics" label="Video title" type="text" className="inline-title" onSave={value => editText('title', String(value))} /></h1>
+      <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={() => setEditMode(current => !current)}><UserStar size={12} />TikTok Studio</button>
     </header>
     <section className="video-summary">
-      <div className="cover-button"><button className="cover-image" disabled={!editMode} onClick={() => coverInput.current?.click()} aria-label="Replace video thumbnail"><Image src={project.cover} alt={project.title} width={100} height={133} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
+      <div className="cover-button"><button className="cover-image" disabled={!editMode} onClick={() => coverInput.current?.click()} aria-label="Replace video thumbnail"><Image src={project.cover} alt={project.title} width={80} height={80} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
       <input ref={coverInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { void replaceCover(e.target.files?.[0]); e.target.value = ''; }} />
       <p>Posted on <InlineValue value={project.date} label="Post date" type="text" onSave={value => editText('date', String(value))} /></p>
       <div className="counts">{[Play, Heart, MessageCircle, Forward, Bookmark].map((Icon, index) => <div key={index}><Icon aria-label={['Views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} /><InlineValue value={[project.views, project.likes, project.comments, project.shares, project.saves][index]} label={['Video views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} display={[project.views, project.likes, project.comments, project.shares, project.saves][index].toLocaleString()} onSave={value => editNumber((['views', 'likes', 'comments', 'shares', 'saves'] as NumberField[])[index], Number(value))} /></div>)}</div>
@@ -173,14 +173,21 @@ export default function Studio() {
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList variant="line" className="analysis-tabs">{['Inspiration', 'Overview', 'Viewers', 'Engagement'].map(item => <TabsTrigger key={item} value={item}>{item}{item === 'Inspiration' && <i className="pink-dot" />}</TabsTrigger>)}</TabsList>
       <TabsContent value="Overview">
-        {project.restricted && <div className="notice">Your video is not eligible for recommendation in the For You feed. If you disagree with the content restriction, you can appeal.<ChevronRight size={22} /></div>}
-        <section className="panel"><h2>Key metrics <Info /></h2><p className="muted">{editMode ? 'Tap a value to edit it here.' : 'Tap TikTok Studio to edit video details.'}</p>
+        <section className="panel"><h2>Key metrics <Info /></h2><p className="muted">Updated on 10/20/2026.</p>
           <div className="metrics">
             <div className="selected"><span>Video views</span><strong><InlineValue value={project.views} label="Video views" display={Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(project.views)} onSave={value => editNumber('views', Number(value))} /></strong></div>
             <div><span>Total play time</span><strong><InlineValue value={project.playTime} label="Total play time" type="text" onSave={value => editText('playTime', String(value))} /></strong></div>
             <div><span>Average watch time</span><strong><InlineValue value={project.watchTime} label="Average watch time in seconds" display={`${project.watchTime}s`} step="any" onSave={value => editNumber('watchTime', Number(value))} /></strong></div>
             <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} onSave={value => editNumber('completion', Number(value))} /></strong></div>
             <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" onSave={value => editNumber('followers', Number(value))} /></strong></div>
+          </div>
+          <div className="views-chart" role="img" aria-label="Video views from September 21 to September 27">
+            <svg viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
+              <path className="chart-grid" d="M0 12H270 M0 38H270 M0 64H270 M0 90H270" />
+              <path className="chart-area" d="M0 73 L45 48 L90 55 L135 34 L180 61 L225 30 L270 44 L270 90 L0 90 Z" />
+              <path className="chart-line" d="M0 73 L45 48 L90 55 L135 34 L180 61 L225 30 L270 44" />
+              <g className="chart-axis"><text x="282" y="15">87</text><text x="282" y="41">58</text><text x="282" y="67">29</text><text x="282" y="93">0</text><text x="0" y="114">Sep 21</text><text x="241" y="114">Sep 27</text></g>
+            </svg>
           </div>
         </section>
       </TabsContent>
