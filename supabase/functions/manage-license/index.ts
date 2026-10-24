@@ -1,5 +1,5 @@
 import { json, options } from "../_shared/cors.ts";
-import { cleanCode, db, requireAdmin } from "../_shared/license.ts";
+import { cleanCode, db, requireAdmin, safeErrorMessage } from "../_shared/license.ts";
 
 // Keep the list response small while retaining every field the dashboard displays.
 const adminLicenseColumns = "id, access_code, plan, active, duration_days, activated_at, expires_at, device_id, activation_count, notes, created_at";
@@ -75,7 +75,7 @@ Deno.serve(async (request) => {
 
     throw new Error("Unknown action.");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Request failed.";
+    const message = safeErrorMessage(error, "Request failed.");
     return json({ error: message }, message === "Unauthorized." ? 401 : 400);
   }
 });

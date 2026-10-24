@@ -32,7 +32,7 @@ create trigger licenses_updated_at before update on public.licenses for each row
 -- Called only by an Edge Function using the service-role database connection.
 -- The row lock ensures two devices cannot activate a code concurrently.
 create or replace function public.activate_license(p_access_code text, p_device_id text)
-returns public.licenses language plpgsql security definer set search_path = public as $$
+returns public.licenses language plpgsql security definer set search_path = '' as $$
 declare v_license public.licenses;
 begin
   select * into v_license from public.licenses where access_code = upper(trim(p_access_code)) for update;

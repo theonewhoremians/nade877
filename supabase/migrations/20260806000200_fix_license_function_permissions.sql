@@ -8,7 +8,7 @@ create or replace function public.activate_license(p_access_code text, p_device_
 returns public.licenses
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_license public.licenses;

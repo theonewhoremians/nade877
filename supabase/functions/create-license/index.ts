@@ -1,5 +1,5 @@
 import { json, options } from "../_shared/cors.ts";
-import { db, randomCode, requireAdmin } from "../_shared/license.ts";
+import { db, randomCode, requireAdmin, safeErrorMessage } from "../_shared/license.ts";
 
 const durations = new Set([1, 7, 30, 90, 100, 180, 365]);
 const adminLicenseColumns = "access_code, plan, active, duration_days, activated_at, expires_at, device_id, activation_count, notes";
@@ -39,6 +39,6 @@ Deno.serve(async (request) => {
 
     throw new Error("Could not generate a unique access code.");
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : "Create failed." }, 400);
+    return json({ error: safeErrorMessage(error, "Create failed.") }, 400);
   }
 });

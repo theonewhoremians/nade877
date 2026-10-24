@@ -1,5 +1,5 @@
 import { corsHeaders, json, options } from "../_shared/cors.ts";
-import { cleanCode, cleanDevice, db, publicLicense, signLicense, type License } from "../_shared/license.ts";
+import { cleanCode, cleanDevice, db, publicLicense, safeErrorMessage, signLicense, type License } from "../_shared/license.ts";
 
 Deno.serve(async request => {
   const preflight = options(request); if (preflight) return preflight;
@@ -17,5 +17,5 @@ Deno.serve(async request => {
       throw error;
     }
     const license = data as License; return json({ token: await signLicense(license), expiresAt: new Date(Date.now() + 86400000).toISOString(), license: publicLicense(license) });
-  } catch (error) { console.error("activation error", error); return json({ error: error instanceof Error ? error.message : "Activation failed." }, 400); }
+  } catch (error) { console.error("Activation failed."); return json({ error: safeErrorMessage(error, "Activation failed.") }, 400); }
 }, { onListen: () => {} });
