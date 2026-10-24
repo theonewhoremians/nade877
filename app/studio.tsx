@@ -21,7 +21,10 @@ function subscribeProject(update: () => void) {
     window.removeEventListener(projectKey, update);
   };
 }
-function readProject() { return localStorage.getItem(projectKey) ?? ''; }
+function readProject() {
+  try { return window.localStorage?.getItem(projectKey) ?? ''; }
+  catch { return ''; }
+}
 function parseProject(raw: string) {
   try {
     const parsed = projectSchema.safeParse(JSON.parse(raw));
@@ -114,7 +117,8 @@ export default function Studio() {
     setNotice('Saving…');
     try {
       if (!(await fetch('/api/license')).ok) { setValid(false); throw new Error('Access expired.'); }
-      localStorage.setItem(projectKey, JSON.stringify(parsed.data));
+      try { window.localStorage?.setItem(projectKey, JSON.stringify(parsed.data)); }
+      catch { throw new Error('Your browser is blocking storage, so edits cannot be saved on this device.'); }
       window.dispatchEvent(new Event(projectKey));
       setNotice('Saved on this device.');
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Save failed.'); }

@@ -25,10 +25,19 @@ export default function Activate() {
     setBusy(true);
     setError('');
     try {
-      let deviceId = localStorage.getItem('editflow-device-id');
+      let deviceId: string | null = null;
+      try {
+        deviceId = window.localStorage?.getItem('editflow-device-id') ?? null;
+      } catch {
+        // Some mobile browsers disable storage in private or restricted contexts.
+      }
       if (!deviceId) {
         deviceId = crypto.randomUUID();
-        localStorage.setItem('editflow-device-id', deviceId);
+        try {
+          window.localStorage?.setItem('editflow-device-id', deviceId);
+        } catch {
+          // Activation can still continue; the server stores the session in secure cookies.
+        }
       }
 
       const response = await fetch('/api/license', {
