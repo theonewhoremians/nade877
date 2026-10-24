@@ -55,14 +55,24 @@ export default function Activate() {
             <span>CREATOR TOOLS</span>
             <strong>Analytics Studio</strong>
           </div>
-          <span className="activation-private"><ShieldCheck size={14} /> PRIVATE</span>
+          <button
+            className="activation-private"
+            type="button"
+            aria-label="Private badge. Double-click to open admin panel."
+            title="Double-click to open admin panel"
+            onDoubleClick={() => window.location.assign('/admin')}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                window.location.assign('/admin');
+              }
+            }}
+          ><ShieldCheck size={14} /> PRIVATE</button>
         </header>
 
         <div className="activation-heading">
-          <div className="activation-key-mark"><KeyRound size={23} /></div>
           <p className="activation-eyebrow">YOUR WORKSPACE IS READY</p>
           <h1 id="activation-title">Unlock your studio</h1>
-          <p className="activation-description">Enter the access code you received to open your video analytics workspace.</p>
         </div>
 
         <form className="activation-form" onSubmit={activate}>
@@ -93,12 +103,7 @@ export default function Activate() {
           {error && <p id="activation-error" role="alert" className="activation-error">{error}</p>}
         </form>
 
-        <footer className="activation-footer">
-          <span><ShieldCheck size={16} /> Your code is securely verified</span>
-          <a href="/admin">Admin sign in <ArrowRight size={14} /></a>
-        </footer>
       </section>
-      <p className="activation-caption">A focused space for your next great edit.</p>
     </main>
   );
 }
