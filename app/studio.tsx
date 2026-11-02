@@ -91,12 +91,14 @@ export default function Studio() {
   }, []);
 
   useEffect(() => {
+    let active = true;
     async function check() {
-      try { if (!(await fetch('/api/license')).ok) setValid(false); }
-      catch { setValid(false); }
+      try { if (!(await fetch('/api/license', { cache: 'no-store' })).ok && active) setValid(false); }
+      catch { if (active) setValid(false); }
     }
+    void check();
     const timer = setInterval(check, 60000);
-    return () => clearInterval(timer);
+    return () => { active = false; clearInterval(timer); };
   }, []);
 
   useEffect(() => {

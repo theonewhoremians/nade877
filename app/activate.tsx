@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, KeyRound, Music2, ShieldCheck } from 'lucide-react';
+import Studio from './studio';
 
 export default function Activate() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [activated, setActivated] = useState(false);
   const hasInteracted = useRef(false);
 
   useEffect(() => {
@@ -21,8 +23,7 @@ export default function Activate() {
         const result = (await response.json().catch(() => ({}))) as { error?: string };
         if (!active) return;
         if (response.ok) {
-          if (activationPending) window.location.replace('/');
-          else window.location.reload();
+          setActivated(true);
           return;
         }
         if (result.error && !hasInteracted.current) {
@@ -71,13 +72,15 @@ export default function Activate() {
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) throw new Error(result?.error || 'Unable to activate this code.');
-      window.location.assign('/?activation=pending');
+      setActivated(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to activate your code.');
     } finally {
       setBusy(false);
     }
   }
+
+  if (activated) return <Studio />;
 
   return (
     <main className="activation">
