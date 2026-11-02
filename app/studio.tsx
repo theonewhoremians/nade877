@@ -84,6 +84,13 @@ export default function Studio() {
   const coverInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('activation')) return;
+    url.searchParams.delete('activation');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+
+  useEffect(() => {
     async function check() {
       try { if (!(await fetch('/api/license')).ok) setValid(false); }
       catch { setValid(false); }

@@ -11,17 +11,26 @@ export default function Activate() {
 
   useEffect(() => {
     let active = true;
+    const activationPending = new URLSearchParams(window.location.search).get('activation') === 'pending';
+    if (activationPending) {
+      window.history.replaceState(window.history.state, '', window.location.pathname);
+    }
     void (async () => {
       try {
         const response = await fetch('/api/license', { cache: 'no-store' });
         const result = (await response.json().catch(() => ({}))) as { error?: string };
         if (!active) return;
         if (response.ok) {
-          window.location.reload();
+          if (activationPending) window.location.replace('/');
+          else window.location.reload();
           return;
         }
-        if (result.error && result.error !== 'Please activate your access code.' && !hasInteracted.current) {
-          setError(result.error);
+        if (result.error && !hasInteracted.current) {
+          if (activationPending && result.error === 'Please activate your access code.') {
+            setError('We could not confirm your activation. Please try again.');
+          } else if (result.error !== 'Please activate your access code.') {
+            setError(result.error);
+          }
         }
       } catch {
         if (active && !hasInteracted.current) {
@@ -62,13 +71,7 @@ export default function Activate() {
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) throw new Error(result?.error || 'Unable to activate this code.');
-
-      const verification = await fetch('/api/license', { cache: 'no-store' });
-      const verificationResult = (await verification.json().catch(() => null)) as { error?: string } | null;
-      if (!verification.ok) {
-        throw new Error(verificationResult?.error || 'Your code was accepted, but your studio session could not be verified. Please try again.');
-      }
-      window.location.reload();
+      window.location.assign('/?activation=pending');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to activate your code.');
     } finally {
