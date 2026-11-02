@@ -1,20 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, KeyRound, Music2, ShieldCheck } from 'lucide-react';
 
 export default function Activate() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const hasInteracted = useRef(false);
 
   useEffect(() => {
     let active = true;
-    void fetch('/api/license', { cache: 'no-store' })
-      .then((response) => {
-        if (active && response.ok) window.location.reload();
-      })
-      .catch(() => {});
+    void (async () => {
+      try {
+        const response = await fetch('/api/license', { cache: 'no-store' });
+        const result = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!active) return;
+        if (response.ok) {
+          window.location.reload();
+          return;
+        }
+        if (result.error && result.error !== 'Please activate your access code.' && !hasInteracted.current) {
+          setError(result.error);
+        }
+      } catch {
+        if (active && !hasInteracted.current) {
+          setError('Unable to check your saved access code. Check your connection and try again.');
+        }
+      }
+    })();
     return () => {
       active = false;
     };
@@ -22,6 +36,7 @@ export default function Activate() {
 
   async function activate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    hasInteracted.current = true;
     setBusy(true);
     setError('');
     try {
@@ -45,8 +60,14 @@ export default function Activate() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessCode: code, deviceId }),
       });
-      const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error || 'Unable to activate this code.');
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error || 'Unable to activate this code.');
+
+      const verification = await fetch('/api/license', { cache: 'no-store' });
+      const verificationResult = (await verification.json().catch(() => null)) as { error?: string } | null;
+      if (!verification.ok) {
+        throw new Error(verificationResult?.error || 'Your code was accepted, but your studio session could not be verified. Please try again.');
+      }
       window.location.reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to activate your code.');
@@ -95,7 +116,12 @@ export default function Activate() {
               placeholder="XXXX-XXXX-XXXX"
               value={code}
               maxLength={14}
-              onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12).match(/.{1,4}/g)?.join('-') || '')}
+              onChange={(event) => {
+                hasInteracted.current = true;
+                setError('');
+                setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12).match(/.{1,4}/g)?.join('-') || '');
+              }}
+              aria-invalid={Boolean(error)}
               aria-describedby={error ? 'activation-error' : 'activation-hint'}
               required
             />
