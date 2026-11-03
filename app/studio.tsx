@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ArrowLeft, Play, Heart, MessageCircleMore, Bookmark, Info, Check, ChevronRight } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -23,17 +23,23 @@ function ShareMetricIcon({ label }: { label: string }) {
   return <svg viewBox="0 0 24 24" role="img" aria-label={label} focusable="false"><path d="M14 3.5 22.2 12 14 20.5v-5.1c-5-.1-8.2 1.4-10.5 5.1.5-7.5 4.1-11.2 10.5-11.5z" /></svg>;
 }
 
-function subscribeProject(update: () => void) {
-  window.addEventListener('storage', update);
-  window.addEventListener(projectKey, update);
-  return () => {
-    window.removeEventListener('storage', update);
-    window.removeEventListener(projectKey, update);
-  };
-}
 function readProject() {
   try { return window.localStorage?.getItem(projectKey) ?? ''; }
   catch { return ''; }
+}
+function useSavedProject() {
+  const [snapshot, setSnapshot] = useState<string | null>(null);
+  useEffect(() => {
+    const update = () => setSnapshot(readProject());
+    update();
+    window.addEventListener('storage', update);
+    window.addEventListener(projectKey, update);
+    return () => {
+      window.removeEventListener('storage', update);
+      window.removeEventListener(projectKey, update);
+    };
+  }, []);
+  return snapshot;
 }
 function parseProject(raw: string) {
   try {
@@ -41,8 +47,6 @@ function parseProject(raw: string) {
     return parsed.success ? parsed.data : defaultProject;
   } catch { return defaultProject; }
 }
-function emptyProject() { return ''; }
-
 function InlineValue({ value, label, onSave, type = 'number', display, step = 1, min = 0, max, className = '', staticMode = false }: {
   value: string | number;
   label: string;
@@ -102,7 +106,7 @@ function AnalyticsBars({ rows }: { rows: { name: string; value: number }[] }) {
 }
 
 export default function Studio() {
-  const rawProject = useSyncExternalStore(subscribeProject, readProject, emptyProject);
+  const rawProject = useSavedProject();
   const project = useMemo(() => rawProject ? parseProject(rawProject) : defaultProject, [rawProject]);
   const [tab, setTab] = useState('Overview');
   const [editMode, setEditMode] = useState(false);
@@ -196,6 +200,7 @@ export default function Studio() {
     reader.readAsDataURL(file);
   }
 
+  if (rawProject === null) return <main className="phone" aria-busy="true" />;
   if (!valid) return <main className="activation"><div className="activation-card"><h1>Check your access</h1><p>Your session expired or could not be verified. Re-enter your access code to continue.</p><button className="primary" onClick={() => window.location.reload()}>Continue to activation</button></div></main>;
 
   return <EditingContext.Provider value={editMode}><main className="phone">

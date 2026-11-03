@@ -19,6 +19,7 @@ import {
   Search,
   ShieldCheck,
   TimerReset,
+  Trash2,
   XCircle,
 } from 'lucide-react';
 
@@ -31,7 +32,7 @@ type License = {
   device_id: string | null;
 };
 
-type AdminAction = 'list' | 'create' | 'enable' | 'disable' | 'extend' | 'reset';
+type AdminAction = 'list' | 'create' | 'enable' | 'disable' | 'extend' | 'reset' | 'delete';
 type Notice = { kind: 'success' | 'error'; message: string };
 type AdminResponse = { error?: string; license?: License; licenses?: License[] };
 
@@ -90,6 +91,8 @@ export default function Admin() {
       if (action === 'create' && result.license?.access_code) {
         setLatestCode(result.license.access_code);
         setNotice({ kind: 'success', message: 'Access code created. Copy it and share it with its owner.' });
+      } else if (action === 'delete') {
+        setNotice({ kind: 'success', message: 'Access code deleted. Its user will be denied at their next access check.' });
       } else {
         setNotice({ kind: 'success', message: action === 'reset' ? 'Device link reset.' : 'Access code updated.' });
       }
@@ -254,6 +257,7 @@ export default function Admin() {
                       <button type="button" disabled={busy} onClick={() => void run(license.active ? 'disable' : 'enable', license.access_code)}>{license.active ? <XCircle size={14} /> : <CircleCheck size={14} />}{license.active ? 'Disable' : 'Enable'}</button>
                       <button type="button" disabled={busy} onClick={() => void run('extend', license.access_code)}><Plus size={14} />Add 30 days</button>
                       <button type="button" disabled={busy} onClick={() => { if (window.confirm('Reset this code’s device link? The current device will need to activate again.')) void run('reset', license.access_code); }}><TimerReset size={14} />Reset device</button>
+                      <button type="button" disabled={busy} onClick={() => { if (window.confirm(`Delete ${license.access_code}? This removes the code and denies access to its user.`)) void run('delete', license.access_code); }}><Trash2 size={14} />Delete code</button>
                     </div>
                   </article>
                 ))}
