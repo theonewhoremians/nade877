@@ -180,4 +180,7 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .views-chart .trend-area{fill:transparent}
 .retention-chart{height:60px;margin:0 -2px}
 .retention-chart .trend-axis{font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
+.graph-axis-edit{display:flex;width:100%;height:18px;align-items:center;overflow:visible;color:#999;font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif;white-space:nowrap}
+.graph-axis-edit .inline-value{padding:0;color:inherit;font:inherit;white-space:nowrap}
+.graph-axis-edit .inline-input{padding:0;color:inherit;font:inherit;white-space:nowrap}
 @media(max-width:600px){.engagement-panel{padding:16px}.engagement-video{width:168px;height:264px}}

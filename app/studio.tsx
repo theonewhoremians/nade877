@@ -12,6 +12,7 @@ const projectKey = 'analytics-studio-project-v1';
 const EditingContext = createContext(false);
 type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'averageRetention' | 'followers' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
 type TrendField = 'viewTrend' | 'retentionTrend' | 'likesTrend';
+type AxisField = 'viewXAxis' | 'viewYAxis' | 'retentionXAxis' | 'retentionYAxis' | 'likesXAxis' | 'likesYAxis';
 type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
 
 function StudioBadgeIcon() {
@@ -104,7 +105,9 @@ function AnalyticsBars({ rows, onEdit }: { rows: { name: string; value: number }
   return <div className="analytics-bars">{rows.map((row, index) => <div className="analytics-bar-row" key={row.name}><div><span>{row.name}</span><strong><InlineValue value={row.value} display={row.value.toFixed(1)} label={`${row.name} percentage`} step="any" max={100} staticMode onSave={value => onEdit(index, Number(value))} />%</strong></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
 }
 
-function EditableTrendGraph({ values, maxValue, editMode, onChange, className, label, width, height, plot, gridLevels = [], axisLabels = [], bottomLabels = [], smooth = false, area = false, highlightIndex = -1 }: {
+type GraphAxisTick = { text: string; x: number; y?: number; axis: 'x' | 'y'; index: number; anchor?: 'start' | 'end'; width?: number };
+
+function EditableTrendGraph({ values, maxValue, editMode, onChange, className, label, width, height, plot, gridLevels = [], axisLabels = [], bottomLabels = [], bottomLabelsEditOnly = false, onAxisEdit, smooth = false, area = false, highlightIndex = -1 }: {
   values: number[];
   maxValue: number;
   editMode: boolean;
@@ -115,8 +118,10 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
   height: number;
   plot: { left: number; right: number; top: number; bottom: number };
   gridLevels?: number[];
-  axisLabels?: { text: string; x: number; y: number }[];
-  bottomLabels?: { text: string; x: number; anchor?: 'start' | 'end' }[];
+  axisLabels?: GraphAxisTick[];
+  bottomLabels?: GraphAxisTick[];
+  bottomLabelsEditOnly?: boolean;
+  onAxisEdit?: (axis: 'x' | 'y', index: number, value: string) => void;
   smooth?: boolean;
   area?: boolean;
   highlightIndex?: number;
@@ -154,6 +159,21 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
     setPoints(next);
     return next;
   }
+  function renderAxisTick(tick: GraphAxisTick, bottom = false) {
+    const textY = bottom ? height - 4 : tick.y ?? height - 4;
+    const textAnchor = tick.anchor ?? 'start';
+    if (editMode && onAxisEdit) {
+      const boxWidth = tick.width ?? (textAnchor === 'end' ? 42 : 48);
+      const boxX = textAnchor === 'end' ? tick.x - boxWidth : tick.x;
+      const boxY = bottom ? height - 20 : textY - 12;
+      return <foreignObject key={`${tick.axis}-${tick.index}`} x={boxX} y={boxY} width={boxWidth} height={18}>
+        <div xmlns="http://www.w3.org/1999/xhtml" className="graph-axis-edit" style={{ textAlign: textAnchor }}>
+          <InlineValue value={tick.text} display={tick.text} label={`Edit ${tick.axis}-axis label ${tick.index + 1} on ${label}`} type="text" staticMode onSave={value => onAxisEdit(tick.axis, tick.index, String(value))} />
+        </div>
+      </foreignObject>;
+    }
+    return <text key={`${tick.axis}-${tick.index}`} x={tick.x} y={textY} textAnchor={textAnchor}>{tick.text}</text>;
+  }
 
   return <div className={className} role="group" aria-label={label}>
     <svg ref={svg} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
@@ -164,8 +184,8 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
         })}
         {area && <path className="trend-area" d={path} />}
         <path className="trend-line" d={curvePath} />
-        <g className="trend-axis">{axisLabels.map((tick, index) => <text key={index} x={tick.x} y={tick.y}>{tick.text}</text>)}{bottomLabels.map((tick, index) => <text key={index} x={tick.x} y={height - 4} textAnchor={tick.anchor ?? 'start'}>{tick.text}</text>)}</g>
       </g>
+      <g className="trend-axis">{axisLabels.map(tick => renderAxisTick(tick))}{(!bottomLabelsEditOnly || editMode) && bottomLabels.map(tick => renderAxisTick(tick, true))}</g>
       {coordinates.map((point, index) => <circle
         key={index}
         className={`trend-point ${index === highlightIndex ? 'is-highlighted' : ''}`}
@@ -308,6 +328,11 @@ export default function Studio() {
     const rows = project[field].map((row, i) => i === index ? { ...row, value: Math.max(0, Math.min(100, value)) } : row);
     void persist({ ...project, [field]: rows });
   }
+  function editAxis(field: AxisField, index: number, value: string) {
+    const labels = [...project[field]];
+    labels[index] = value.slice(0, field.endsWith('YAxis') ? 20 : 40);
+    void persist({ ...project, [field]: labels });
+  }
   async function replaceCover(file?: File) {
     if (!file) return;
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 2_000_000) {
@@ -350,7 +375,7 @@ export default function Studio() {
             <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} staticMode onSave={value => editNumber('completion', Number(value))} /></strong></div>
             <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" staticMode onSave={value => editNumber('followers', Number(value))} /></strong></div>
           </div>
-          <EditableTrendGraph className="views-chart editable-graph" label="Video views from September 21 to September 27" values={project.viewTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('viewTrend', values)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={[{ text: '87', x: 286, y: 16 }, { text: '2', x: 286, y: 56 }, { text: '1', x: 286, y: 96 }]} bottomLabels={[{ text: 'Sep 21', x: 4 }, { text: 'Sep 27', x: 276, anchor: 'end' }]} />
+          <EditableTrendGraph className="views-chart editable-graph" label="Video views from September 21 to September 27" values={project.viewTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('viewTrend', values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? 'viewXAxis' : 'viewYAxis', index, value)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={[{ text: project.viewYAxis[0], x: 286, y: 16, axis: 'y', index: 0 }, { text: project.viewYAxis[1], x: 286, y: 56, axis: 'y', index: 1 }, { text: project.viewYAxis[2], x: 286, y: 96, axis: 'y', index: 2 }]} bottomLabels={[{ text: project.viewXAxis[0], x: 4, axis: 'x', index: 0 }, { text: project.viewXAxis[1], x: 276, anchor: 'end', axis: 'x', index: 1 }]} />
           <p className="chart-note">Chart shows the data trend during the first 7 days after posting.</p>
         </section>
         <section className="panel retention-panel">
@@ -361,7 +386,7 @@ export default function Studio() {
             <Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized />
             {project.cover !== '/video-cover.png' && <span aria-hidden="true"><Play size={26} fill="white" strokeWidth={0} /></span>}
           </div>
-          <EditableTrendGraph className="retention-chart editable-graph" label="Audience retention" values={project.retentionTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('retentionTrend', values)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 90 }} gridLevels={[1, 0.5, 0]} axisLabels={[{ text: '100%', x: 266, y: 14 }, { text: '50%', x: 266, y: 54 }]} smooth area highlightIndex={0} />
+          <EditableTrendGraph className="retention-chart editable-graph" label="Audience retention" values={project.retentionTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('retentionTrend', values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? 'retentionXAxis' : 'retentionYAxis', index, value)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 90 }} gridLevels={[1, 0.5, 0]} axisLabels={[{ text: project.retentionYAxis[0], x: 266, y: 14, axis: 'y', index: 0 }, { text: project.retentionYAxis[1], x: 266, y: 54, axis: 'y', index: 1 }]} bottomLabels={[{ text: project.retentionXAxis[0], x: 8, axis: 'x', index: 0 }, { text: project.retentionXAxis[1], x: 258, anchor: 'end', axis: 'x', index: 1 }]} bottomLabelsEditOnly smooth area highlightIndex={0} />
           <div className="retention-scrubber"><input type="range" min="0" max={durationSeconds} value={selectedRetentionSecond} onChange={event => setRetentionSecond(Number(event.target.value))} aria-label="Video retention time" /><div><span>00:{String(selectedRetentionSecond).padStart(2, '0')} (<InlineValue value={retentionPercent} label="Retention percentage at selected time" step="any" max={100} staticMode onSave={value => { const trend = [...project.retentionTrend]; trend[retentionPointIndex] = Math.max(0, Math.min(100, Number(value))); editTrend('retentionTrend', trend); }} />%)</span><span>00:{String(durationSeconds).padStart(2, '0')}</span></div></div>
         </section>
         <section className="panel analytics-list-panel traffic-sources"><h2>Traffic sources <Info /></h2><AnalyticsBars rows={project.trafficSources} onEdit={(index, value) => editAnalyticsRow('trafficSources', index, value)} /></section>
@@ -385,7 +410,7 @@ export default function Studio() {
           <h2>Likes <Info /></h2>
           <p className="engagement-copy">Most viewers liked this video at 0:01. Check out the moment where most viewers liked your video.</p>
           <div className="engagement-video"><Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized />{project.cover !== '/video-cover.png' && <span aria-hidden="true"><Play size={36} fill="white" strokeWidth={0} /></span>}</div>
-          <EditableTrendGraph className="engagement-chart editable-graph" label="Likes over the video timeline" values={project.likesTrend} maxValue={80} editMode={editMode} onChange={values => editTrend('likesTrend', values)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 80 }} gridLevels={[1, 0.75, 0.5, 0.25]} axisLabels={[{ text: '80%', x: 266, y: 14 }, { text: '60%', x: 266, y: 32 }, { text: '40%', x: 266, y: 47 }, { text: '20%', x: 266, y: 62 }]} area highlightIndex={0} />
+          <EditableTrendGraph className="engagement-chart editable-graph" label="Likes over the video timeline" values={project.likesTrend} maxValue={80} editMode={editMode} onChange={values => editTrend('likesTrend', values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? 'likesXAxis' : 'likesYAxis', index, value)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 80 }} gridLevels={[1, 0.75, 0.5, 0.25]} axisLabels={[{ text: project.likesYAxis[0], x: 266, y: 14, axis: 'y', index: 0 }, { text: project.likesYAxis[1], x: 266, y: 32, axis: 'y', index: 1 }, { text: project.likesYAxis[2], x: 266, y: 47, axis: 'y', index: 2 }, { text: project.likesYAxis[3], x: 266, y: 62, axis: 'y', index: 3 }]} bottomLabels={[{ text: project.likesXAxis[0], x: 8, axis: 'x', index: 0 }, { text: project.likesXAxis[1], x: 258, anchor: 'end', axis: 'x', index: 1 }]} bottomLabelsEditOnly area highlightIndex={0} />
           <div className="engagement-scrubber"><input type="range" min="0" max={durationSeconds} value={engagementSecond} onChange={event => setEngagementSecond(Number(event.target.value))} aria-label="Likes graph timeline" /></div>
         </section>
       </TabsContent>
