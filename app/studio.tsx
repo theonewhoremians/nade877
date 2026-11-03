@@ -13,6 +13,7 @@ const searchQueries = [{ name: 'candid nyc', value: 16.7 }, { name: 'The candid 
 const projectKey = 'analytics-studio-project-v1';
 const EditingContext = createContext(false);
 type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'followers' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
+type TrendField = 'viewTrend' | 'retentionTrend' | 'likesTrend';
 type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
 
 function StudioBadgeIcon() {
@@ -105,6 +106,97 @@ function AnalyticsBars({ rows }: { rows: { name: string; value: number }[] }) {
   return <div className="analytics-bars">{rows.map(row => <div className="analytics-bar-row" key={row.name}><div><span>{row.name}</span><strong>{row.value.toFixed(1)}%</strong></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
 }
 
+function EditableTrendGraph({ values, maxValue, editMode, onChange, className, label, width, height, plot, gridLevels = [], axisLabels = [], bottomLabels = [], smooth = false, area = false, highlightIndex = -1 }: {
+  values: number[];
+  maxValue: number;
+  editMode: boolean;
+  onChange: (values: number[]) => void;
+  className: string;
+  label: string;
+  width: number;
+  height: number;
+  plot: { left: number; right: number; top: number; bottom: number };
+  gridLevels?: number[];
+  axisLabels?: { text: string; x: number; y: number }[];
+  bottomLabels?: { text: string; x: number; anchor?: 'start' | 'end' }[];
+  smooth?: boolean;
+  area?: boolean;
+  highlightIndex?: number;
+}) {
+  const svg = useRef<SVGSVGElement>(null);
+  const draft = useRef(values);
+  const [points, setPoints] = useState(values);
+  useEffect(() => { draft.current = values; setPoints(values); }, [values]);
+
+  const coordinates = points.map((value, index) => ({
+    x: plot.left + (plot.right - plot.left) * index / Math.max(1, points.length - 1),
+    y: plot.bottom - Math.max(0, Math.min(maxValue, value)) / maxValue * (plot.bottom - plot.top),
+  }));
+  const linePath = coordinates.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ');
+  const curvePath = smooth && coordinates.length > 2
+    ? `${coordinates.slice(1).map((point, index) => {
+      const previous = coordinates[index];
+      const middleX = (previous.x + point.x) / 2;
+      const middleY = (previous.y + point.y) / 2;
+      return `${index ? '' : `M ${previous.x} ${previous.y} `}Q ${previous.x} ${previous.y} ${middleX} ${middleY}`;
+    }).join(' ')} T ${coordinates.at(-1)?.x} ${coordinates.at(-1)?.y}`
+    : linePath;
+  const path = area && coordinates.length ? `${curvePath} L ${plot.right} ${plot.bottom} L ${plot.left} ${plot.bottom} Z` : curvePath;
+
+  function valueAt(clientY: number) {
+    const bounds = svg.current?.getBoundingClientRect();
+    if (!bounds || !bounds.height) return 0;
+    const y = (clientY - bounds.top) * height / bounds.height;
+    return Math.round(Math.max(0, Math.min(maxValue, maxValue * (plot.bottom - y) / (plot.bottom - plot.top))) * 10) / 10;
+  }
+  function updatePoint(index: number, value: number) {
+    const next = [...draft.current];
+    next[index] = Math.round(Math.max(0, Math.min(maxValue, value)) * 10) / 10;
+    draft.current = next;
+    setPoints(next);
+    return next;
+  }
+
+  return <div className={className} role="group" aria-label={label}>
+    <svg ref={svg} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+      <g aria-hidden="true">
+        {gridLevels.map((level, index) => {
+          const y = plot.bottom - level * (plot.bottom - plot.top);
+          return <path className="trend-grid" key={index} d={`M ${plot.left} ${y} H ${plot.right}`} />;
+        })}
+        {area && <path className="trend-area" d={path} />}
+        <path className="trend-line" d={curvePath} />
+        <g className="trend-axis">{axisLabels.map((tick, index) => <text key={index} x={tick.x} y={tick.y}>{tick.text}</text>)}{bottomLabels.map((tick, index) => <text key={index} x={tick.x} y={height - 4} textAnchor={tick.anchor ?? 'start'}>{tick.text}</text>)}</g>
+      </g>
+      {coordinates.map((point, index) => <circle
+        key={index}
+        className={`trend-point ${index === highlightIndex ? 'is-highlighted' : ''}`}
+        cx={point.x}
+        cy={point.y}
+        r={editMode ? 6 : index === highlightIndex ? 3.8 : 0}
+        role={editMode ? 'slider' : undefined}
+        tabIndex={editMode ? 0 : -1}
+        aria-label={`${label}, point ${index + 1}`}
+        aria-valuemin={0}
+        aria-valuemax={maxValue}
+        aria-valuenow={points[index]}
+        aria-valuetext={`${points[index]}${maxValue === 100 || className.includes('engagement') || className.includes('retention') ? '%' : ''}`}
+        onPointerDown={editMode ? event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); updatePoint(index, valueAt(event.clientY)); } : undefined}
+        onPointerMove={editMode ? event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) updatePoint(index, valueAt(event.clientY)); } : undefined}
+        onPointerUp={editMode ? event => { const next = updatePoint(index, valueAt(event.clientY)); onChange(next); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); } : undefined}
+        onKeyDown={editMode ? event => {
+          const step = event.shiftKey ? 5 : 1;
+          if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const current = draft.current[index];
+          const nextValue = event.key === 'Home' ? 0 : event.key === 'End' ? maxValue : current + (event.key === 'ArrowUp' ? step : -step);
+          onChange(updatePoint(index, nextValue));
+        } : undefined}
+      />)}
+    </svg>
+  </div>;
+}
+
 export default function Studio() {
   const rawProject = useSavedProject();
   const project = useMemo(() => rawProject ? parseProject(rawProject) : defaultProject, [rawProject]);
@@ -113,6 +205,7 @@ export default function Studio() {
   const [notice, setNotice] = useState('');
   const [valid, setValid] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [engagementSecond, setEngagementSecond] = useState(0);
   const coverInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -174,6 +267,7 @@ export default function Studio() {
     void persist(next);
   }
   function editText(field: TextField, value: string) { void persist({ ...project, [field]: value }); }
+  function editTrend(field: TrendField, values: number[]) { void persist({ ...project, [field]: values }); }
   function editAge(index: number, value: number) {
     const ages = [...project.ages];
     ages[index] = value;
@@ -203,7 +297,7 @@ export default function Studio() {
   if (rawProject === null) return <main className="phone" aria-busy="true" />;
   if (!valid) return <main className="activation"><div className="activation-card"><h1>Check your access</h1><p>Your session expired or could not be verified. Re-enter your access code to continue.</p><button className="primary" onClick={() => window.location.reload()}>Continue to activation</button></div></main>;
 
-  return <EditingContext.Provider value={editMode}><main className="phone">
+  return <EditingContext.Provider value={editMode}><main className={`phone ${tab === 'Engagement' ? 'engagement-view' : ''}`}>
     <header className="app-header">
       <button className="icon-button" aria-label="Back to overview" onClick={() => setTab('Overview')}><ArrowLeft size={20} /></button>
       <h1><InlineValue value={project.title} display="Video analytics" label="Video title" type="text" className="inline-title" onSave={value => editText('title', String(value))} /></h1>
@@ -227,14 +321,7 @@ export default function Studio() {
             <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} staticMode onSave={value => editNumber('completion', Number(value))} /></strong></div>
             <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" staticMode onSave={value => editNumber('followers', Number(value))} /></strong></div>
           </div>
-          <div className="views-chart" role="img" aria-label="Video views from September 21 to September 27">
-            <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
-              <path className="chart-grid" d="M4 12H276 M4 52H276 M4 92H276 M4 132H276" />
-              <path className="chart-line" d="M4 132 H276" />
-              <g className="chart-points"><circle cx="4" cy="132" r="3.5" /><circle cx="49" cy="132" r="3.5" /><circle cx="94" cy="132" r="3.5" /><circle cx="140" cy="132" r="3.5" /><circle cx="185" cy="132" r="3.5" /><circle cx="230" cy="132" r="3.5" /><circle cx="276" cy="132" r="3.5" /></g>
-              <g className="chart-axis"><text x="286" y="16">87</text><text x="286" y="56">2</text><text x="286" y="96">1</text><text x="4" y="154">Sep 21</text><text x="241" y="154">Sep 27</text></g>
-            </svg>
-          </div>
+          <EditableTrendGraph className="views-chart editable-graph" label="Video views from September 21 to September 27" values={project.viewTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('viewTrend', values)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={[{ text: '87', x: 286, y: 16 }, { text: '2', x: 286, y: 56 }, { text: '1', x: 286, y: 96 }]} bottomLabels={[{ text: 'Sep 21', x: 4 }, { text: 'Sep 27', x: 276, anchor: 'end' }]} />
           <p className="chart-note">Chart shows the data trend during the first 7 days after posting.</p>
         </section>
         <section className="panel retention-panel">
@@ -245,15 +332,7 @@ export default function Studio() {
             <Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized />
             {project.cover !== '/video-cover.png' && <span aria-hidden="true"><Play size={26} fill="white" strokeWidth={0} /></span>}
           </div>
-          <div className="retention-chart" role="img" aria-label="Audience retention falls from 100 percent to about 15 percent">
-            <svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true">
-              <path className="retention-grid" d="M8 10H258 M8 50H258 M8 90H258" />
-              <path className="retention-area" d="M8 10 C23 20 34 35 55 45 S88 60 111 66 S144 72 166 76 S205 80 258 84 L258 90 H8 Z" />
-              <path className="retention-line" d="M8 10 C23 20 34 35 55 45 S88 60 111 66 S144 72 166 76 S205 80 258 84" />
-              <circle cx="8" cy="10" r="4" />
-              <g className="retention-axis"><text x="266" y="14">100%</text><text x="266" y="54">50%</text></g>
-            </svg>
-          </div>
+          <EditableTrendGraph className="retention-chart editable-graph" label="Audience retention" values={project.retentionTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('retentionTrend', values)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 90 }} gridLevels={[1, 0.5, 0]} axisLabels={[{ text: '100%', x: 266, y: 14 }, { text: '50%', x: 266, y: 54 }]} smooth area highlightIndex={0} />
           <div className="retention-scrubber"><input type="range" min="0" max="15" defaultValue="1" aria-label="Video retention time" /><div><span>00:01 (76%)</span><span>00:15</span></div></div>
         </section>
         <section className="panel analytics-list-panel traffic-sources"><h2>Traffic sources <Info /></h2><AnalyticsBars rows={trafficSources} /></section>
@@ -271,7 +350,16 @@ export default function Studio() {
         <section className="panel"><h2>Age</h2><Bars rows={ageLabels.map((name, index) => ({ name, value: project.ages[index] }))} onEdit={editAge} /></section>
         <section className="panel"><h2>Locations <Info /></h2><Bars rows={project.locations} onEdit={editLocation} /></section>
       </TabsContent>
-      <TabsContent value="Engagement"><section className="panel"><h2>Engagement <Info /></h2><div className="metrics">{[['Likes', 'likes', project.likes], ['Comments', 'comments', project.comments], ['Shares', 'shares', project.shares], ['Saves', 'saves', project.saves]].map(([label, field, value]) => <div key={String(field)}><span>{label}</span><strong><InlineValue value={Number(value)} label={String(label)} onSave={next => editNumber(String(field) as NumberField, Number(next))} /></strong></div>)}</div></section></TabsContent>
+      <TabsContent value="Engagement">
+        <section className="panel engagement-panel engagement-words-panel"><h2>Top words used in comments <Info /></h2><p>Top word insights are not ready yet. Please check back later.</p></section>
+        <section className="panel engagement-panel engagement-likes-panel">
+          <h2>Likes <Info /></h2>
+          <p className="engagement-copy">Most viewers liked this video at 0:01. Check out the moment where most viewers liked your video.</p>
+          <div className="engagement-video"><Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized /><span aria-hidden="true"><Play size={36} fill="white" strokeWidth={0} /></span></div>
+          <EditableTrendGraph className="engagement-chart editable-graph" label="Likes over the video timeline" values={project.likesTrend} maxValue={80} editMode={editMode} onChange={values => editTrend('likesTrend', values)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 80 }} gridLevels={[1, 0.75, 0.5, 0.25]} axisLabels={[{ text: '80%', x: 266, y: 14 }, { text: '60%', x: 266, y: 32 }, { text: '40%', x: 266, y: 47 }, { text: '20%', x: 266, y: 62 }]} area highlightIndex={0} />
+          <div className="engagement-scrubber"><input type="range" min="0" max={Math.max(1, Math.ceil(project.duration))} value={engagementSecond} onChange={event => setEngagementSecond(Number(event.target.value))} aria-label="Likes graph timeline" /></div>
+        </section>
+      </TabsContent>
       <TabsContent value="Inspiration"><section className="panel"><h2>Inspiration</h2><p className="muted">No inspiration data was included in this video.</p><button className="primary" onClick={() => setTab('Overview')}>View video metrics</button></section></TabsContent>
     </Tabs>
     {!busy && notice && <div className="save-toast" role="status"><Check size={16} />{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}>×</button></div>}

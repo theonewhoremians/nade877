@@ -144,3 +144,41 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .inline-input{display:inline-block;appearance:none;vertical-align:baseline;font:inherit;color:inherit;background:transparent;border:0;border-radius:0;padding:0;margin:0;line-height:inherit;max-width:100%;min-width:1ch;width:auto;text-align:inherit;outline:none;box-shadow:none;caret-color:#0078d4;white-space:pre-wrap;overflow-wrap:anywhere}
 .inline-input:focus-visible{outline:none}
 .key-metrics-panel .metrics strong .inline-value{font-size:inherit;font-weight:inherit;line-height:inherit}
+.engagement-view .video-summary{display:none}
+.engagement-panel{padding:16px;margin:6px 6px 8px}
+.engagement-panel h2{font-size:17px;line-height:22px;font-weight:700;gap:6px;margin:2px 0 4px}
+.engagement-panel h2 svg{width:20px!important;height:20px!important;stroke-width:1.8}
+.engagement-words-panel{min-height:98px}
+.engagement-words-panel>p,.engagement-copy{margin:8px 0 0;color:#929292;font-size:14px;line-height:20px;font-weight:400}
+.engagement-likes-panel h2{margin-bottom:16px}
+.engagement-copy{margin:0}
+.engagement-video{position:relative;width:168px;height:264px;margin:18px auto 12px;overflow:hidden;background:#171717}
+.engagement-video img{display:block;width:100%;height:100%;object-fit:cover}
+.engagement-video>span{position:absolute;inset:0;display:grid;place-items:center;color:#fff}
+.engagement-video svg{width:36px;height:36px;filter:drop-shadow(0 1px 3px #0008)}
+.engagement-chart{height:72px;margin:2px -2px 0}
+.engagement-chart svg{display:block;width:100%;height:100%;overflow:visible}
+.engagement-chart .trend-grid{fill:none;stroke:#d7d7d7;stroke-width:1;stroke-dasharray:2 3}
+.engagement-chart .trend-area{fill:#e5f2fa}
+.engagement-chart .trend-line{fill:none;stroke:#168bd2;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.engagement-chart .trend-axis{fill:#888;font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
+.engagement-chart .trend-point{fill:#fff;stroke:#168bd2;stroke-width:1.5}
+.engagement-chart .trend-point.is-highlighted{stroke-width:2.2}
+.engagement-scrubber{margin:12px 12px 4px}
+.engagement-scrubber input[type=range]{display:block;width:100%;height:4px;margin:0;padding:0;border:0;border-radius:4px;appearance:none;background:#aaa;touch-action:pan-y}
+.engagement-scrubber input[type=range]::-webkit-slider-thumb{width:22px;height:22px;border:0;border-radius:50%;appearance:none;background:#fff;box-shadow:0 2px 8px #0003}
+.engagement-scrubber input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0003}
+.editable-graph .trend-grid{fill:none;stroke:#ddd;stroke-width:1;stroke-dasharray:1 4}
+.editable-graph .trend-axis{fill:#999;font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
+.editable-graph .trend-area{fill:#e7f2f4}
+.editable-graph .trend-line{fill:none;stroke:#70aeba;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.editable-graph .trend-point{fill:#fff;stroke:#70aeba;stroke-width:1.5}
+.editable-graph .trend-point[role=slider]{cursor:ns-resize;touch-action:none}
+.editable-graph .trend-point[role=slider]:focus-visible{stroke:#0078d4;stroke-width:3;outline:none}
+.views-chart{height:136px;margin:18px -2px 0}
+.views-chart svg,.retention-chart svg{display:block;width:100%;height:100%;overflow:visible}
+.views-chart .trend-line{stroke:#729eaa}
+.views-chart .trend-area{fill:transparent}
+.retention-chart{height:60px;margin:0 -2px}
+.retention-chart .trend-axis{font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
+@media(max-width:600px){.engagement-panel{padding:16px}.engagement-video{width:168px;height:264px}}
