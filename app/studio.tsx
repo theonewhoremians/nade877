@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, UserStar, Play, Heart, MessageCircle, Forward, Bookmark, Info, Check, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Play, Heart, MessageCircleMore, Bookmark, Info, Check, ChevronRight } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { defaultProject, projectSchema, type Project } from '@/lib/project';
@@ -14,6 +14,14 @@ const projectKey = 'analytics-studio-project-v1';
 const EditingContext = createContext(false);
 type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'followers' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
 type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
+
+function StudioBadgeIcon() {
+  return <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="6" cy="5.2" r="3" /><path d="M.9 17.1v-1.3a5.1 5.1 0 0 1 10.2 0v1.3z" /><path d="m14.5 1.1.9 2 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.5 2.1-.3z" /></svg>;
+}
+
+function ShareMetricIcon({ label }: { label: string }) {
+  return <svg viewBox="0 0 24 24" role="img" aria-label={label} focusable="false"><path d="M14 3.5 22.2 12 14 20.5v-5.1c-5-.1-8.2 1.4-10.5 5.1.5-7.5 4.1-11.2 10.5-11.5z" /></svg>;
+}
 
 function subscribeProject(update: () => void) {
   window.addEventListener('storage', update);
@@ -180,19 +188,19 @@ export default function Studio() {
     <header className="app-header">
       <button className="icon-button" aria-label="Back to overview" onClick={() => setTab('Overview')}><ArrowLeft size={20} /></button>
       <h1><InlineValue value={project.title} display="Video analytics" label="Video title" type="text" className="inline-title" onSave={value => editText('title', String(value))} /></h1>
-      <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={() => setEditMode(current => !current)}><UserStar size={12} />TikTok Studio</button>
+      <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={() => setEditMode(current => !current)}><StudioBadgeIcon />TikTok Studio</button>
     </header>
     <section className="video-summary">
       <div className="cover-button"><button className="cover-image" onClick={() => coverInput.current?.click()} aria-label="Upload video thumbnail"><Image src={project.cover} alt={project.title} width={80} height={108} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration.toFixed(2)}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
       <input ref={coverInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { void replaceCover(e.target.files?.[0]); e.target.value = ''; }} />
       <p>Posted on <InlineValue value={project.date} label="Post date" type="text" onSave={value => editText('date', String(value))} /></p>
-      <div className="counts">{[Play, Heart, MessageCircle, Forward, Bookmark].map((Icon, index) => <div key={index}><Icon aria-label={['Views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} /><InlineValue value={[project.views, project.likes, project.comments, project.shares, project.saves][index]} label={['Video views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} display={[project.views, project.likes, project.comments, project.shares, project.saves][index].toLocaleString()} onSave={value => editNumber((['views', 'likes', 'comments', 'shares', 'saves'] as NumberField[])[index], Number(value))} /></div>)}</div>
+      <div className="counts">{[Play, Heart, MessageCircleMore, null, Bookmark].map((Icon, index) => <div key={index}>{Icon ? <Icon aria-label={['Views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} /> : <ShareMetricIcon label="Shares" />}<InlineValue value={[project.views, project.likes, project.comments, project.shares, project.saves][index]} label={['Video views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} display={[project.views, project.likes, project.comments, project.shares, project.saves][index].toLocaleString()} onSave={value => editNumber((['views', 'likes', 'comments', 'shares', 'saves'] as NumberField[])[index], Number(value))} /></div>)}</div>
     </section>
 
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList variant="line" className="analysis-tabs">{['Inspiration', 'Overview', 'Viewers', 'Engagement'].map(item => <TabsTrigger key={item} value={item}>{item}</TabsTrigger>)}</TabsList>
       <TabsContent value="Overview">
-        <section className="panel"><h2>Key metrics <Info /></h2><p className="muted">Updated on 10/20/2026.</p>
+        <section className="panel key-metrics-panel"><h2>Key metrics <Info /></h2><p className="muted">Updated on 10/20/2026.</p>
           <div className="metrics">
             <div className="selected"><span>Video views</span><strong><InlineValue value={project.views} label="Video views" display={Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(project.views)} onSave={value => editNumber('views', Number(value))} /></strong></div>
             <div><span>Total play time</span><strong><InlineValue value={project.playTime} label="Total play time" type="text" onSave={value => editText('playTime', String(value))} /></strong></div>
@@ -205,7 +213,7 @@ export default function Studio() {
               <path className="chart-grid" d="M4 12H276 M4 52H276 M4 92H276 M4 132H276" />
               <path className="chart-line" d="M4 132 H276" />
               <g className="chart-points"><circle cx="4" cy="132" r="3.5" /><circle cx="49" cy="132" r="3.5" /><circle cx="94" cy="132" r="3.5" /><circle cx="140" cy="132" r="3.5" /><circle cx="185" cy="132" r="3.5" /><circle cx="230" cy="132" r="3.5" /><circle cx="276" cy="132" r="3.5" /></g>
-              <g className="chart-axis"><text x="286" y="16">3</text><text x="286" y="56">2</text><text x="286" y="96">1</text><text x="4" y="154">Sep 21</text><text x="241" y="154">Sep 27</text></g>
+              <g className="chart-axis"><text x="286" y="16">87</text><text x="286" y="56">2</text><text x="286" y="96">1</text><text x="4" y="154">Sep 21</text><text x="241" y="154">Sep 27</text></g>
             </svg>
           </div>
           <p className="chart-note">Chart shows the data trend during the first 7 days after posting.</p>

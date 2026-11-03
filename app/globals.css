@@ -52,16 +52,18 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .app-header h1{position:absolute;left:50%;width:100px;margin:0;transform:translateX(-50%);font-size:18px;font-weight:700;line-height:1.2;text-align:center}
 .app-header h1 .inline-title{display:block;width:100%;max-width:100%;font-size:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .studio-pill{width:112px;height:30px;margin-left:auto;justify-content:center;padding:4px 8px;border-color:transparent;font-size:13px;font-weight:600}
-.studio-pill svg{width:14px;height:14px;flex-shrink:0}
+.studio-pill svg{width:15px;height:15px;flex-shrink:0;fill:currentColor}
 .video-summary{padding:16px 12px 14px}
 .video-summary img,.cover-button,.cover-image{width:82px;height:108px}
 .video-summary img,.cover-image{border-radius:8px}
 .cover-button>span{bottom:4px;font-size:13px;line-height:16px}
 .video-summary p{font-size:14px;line-height:18px;margin:10px 0 16px}
 .counts{justify-content:initial}
-.counts>div{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:20%;font-size:14px;font-weight:600;line-height:18px}
+.counts>div{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:20%;font-size:14px;font-weight:500;line-height:18px}
 .counts>div:not(:last-child)::after{content:"";position:absolute;right:0;top:50%;width:1px;height:20px;background:#e5e5e5;transform:translateY(-50%)}
-.counts svg{width:17px;height:17px}
+.counts svg{width:17px;height:17px;color:#a6a6a6;fill:currentColor}
+.counts>div:nth-child(1)>svg,.counts>div:nth-child(2)>svg,.counts>div:nth-child(3)>svg,.counts>div:nth-child(5)>svg{stroke:none}
+.counts>div:nth-child(3)>svg path:not(:first-child){fill:none;stroke:#f3f3f3;stroke-width:2.4;stroke-linecap:round}
 .analysis-tabs{top:60px;height:38px!important;gap:8px!important;padding:0 10px!important}
 .analysis-tabs + [data-slot="tabs-content"] > .panel:first-child{margin-top:0}
 .analysis-tabs button{font-size:16px!important;font-weight:400!important;padding:8px 8px!important}
@@ -72,7 +74,8 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .muted{font-size:14px;line-height:20px;margin:0 0 18px}
 .metrics{gap:8px}
 .metrics>div,.metrics>button{min-height:76px;padding:11px 12px;border-radius:10px}
-.metrics>div:first-child,.metrics>button.selected{border-color:#84c2cf;background:#f2f9fb}
+.metrics>div:first-child,.metrics>button.selected{border-color:#84c2cf;background:#f6fafd}
+.key-metrics-panel .muted{margin-bottom:15px}
 .metrics span{font-size:14px;font-weight:500;line-height:1.25}
 .metrics strong{font-size:22px;font-weight:700;line-height:1.2;margin-top:2px}
 .views-chart{height:136px;margin:18px -2px 0}
