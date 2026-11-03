@@ -2,15 +2,17 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, UserStar, Play, Heart, MessageCircle, Forward, Bookmark, Info, Check } from 'lucide-react';
+import { ArrowLeft, UserStar, Play, Heart, MessageCircle, Forward, Bookmark, Info, Check, ChevronRight } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { defaultProject, projectSchema, type Project } from '@/lib/project';
 
 const ageLabels = ['18 - 24', '25 - 34', '35 - 44', '45 - 54', '55+'];
+const trafficSources = [{ name: 'For You', value: 99.5 }, { name: 'Personal profile', value: 0.4 }, { name: 'Search', value: 0.1 }, { name: 'Other', value: 0 }, { name: 'Sound', value: 0 }, { name: 'Following', value: 0 }];
+const searchQueries = [{ name: 'candid nyc', value: 16.7 }, { name: 'The candid club', value: 16.7 }, { name: 'comfort zone club', value: 16.7 }, { name: 'Candid nyc', value: 16.7 }, { name: 'the candid club', value: 16.7 }];
 const projectKey = 'analytics-studio-project-v1';
 const EditingContext = createContext(false);
-type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'followers' | 'nonFollowers' | 'male' | 'female' | 'other';
+type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'followers' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
 type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
 
 function subscribeProject(update: () => void) {
@@ -71,6 +73,10 @@ function InlineValue({ value, label, onSave, type = 'number', display, step = 1,
 
 function Bars({ rows, onEdit }: { rows: { name: string; value: number }[]; onEdit: (index: number, value: number) => void }) {
   return <div className="bar-list">{rows.map((row, index) => <div key={index}><div className="bar-label"><span>{row.name}</span><b><InlineValue value={row.value} label={`${row.name} viewers percentage`} step="any" max={100} onSave={value => onEdit(index, Number(value))} />%</b></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
+}
+
+function AnalyticsBars({ rows }: { rows: { name: string; value: number }[] }) {
+  return <div className="analytics-bars">{rows.map(row => <div className="analytics-bar-row" key={row.name}><div><span>{row.name}</span><strong>{row.value.toFixed(1)}%</strong></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
 }
 
 export default function Studio() {
@@ -195,13 +201,14 @@ export default function Studio() {
             <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" onSave={value => editNumber('followers', Number(value))} /></strong></div>
           </div>
           <div className="views-chart" role="img" aria-label="Video views from September 21 to September 27">
-            <svg viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
-              <path className="chart-grid" d="M0 12H270 M0 38H270 M0 64H270 M0 90H270" />
-              <path className="chart-area" d="M0 73 L45 48 L90 55 L135 34 L180 61 L225 30 L270 44 L270 90 L0 90 Z" />
-              <path className="chart-line" d="M0 73 L45 48 L90 55 L135 34 L180 61 L225 30 L270 44" />
-              <g className="chart-axis"><text x="282" y="15">87</text><text x="282" y="41">58</text><text x="282" y="67">29</text><text x="282" y="93">0</text><text x="0" y="114">Sep 21</text><text x="241" y="114">Sep 27</text></g>
+            <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
+              <path className="chart-grid" d="M4 12H276 M4 52H276 M4 92H276 M4 132H276" />
+              <path className="chart-line" d="M4 132 H276" />
+              <g className="chart-points"><circle cx="4" cy="132" r="3.5" /><circle cx="49" cy="132" r="3.5" /><circle cx="94" cy="132" r="3.5" /><circle cx="140" cy="132" r="3.5" /><circle cx="185" cy="132" r="3.5" /><circle cx="230" cy="132" r="3.5" /><circle cx="276" cy="132" r="3.5" /></g>
+              <g className="chart-axis"><text x="286" y="16">3</text><text x="286" y="56">2</text><text x="286" y="96">1</text><text x="4" y="154">Sep 21</text><text x="241" y="154">Sep 27</text></g>
             </svg>
           </div>
+          <p className="chart-note">Chart shows the data trend during the first 7 days after posting.</p>
         </section>
         <section className="panel retention-panel">
           <h2>Retention rate <Info /></h2>
@@ -220,13 +227,19 @@ export default function Studio() {
               <g className="retention-axis"><text x="266" y="14">100%</text><text x="266" y="54">50%</text></g>
             </svg>
           </div>
-          <div className="retention-scrubber"><input type="range" min="0" max="15" defaultValue="0" aria-label="Video retention time" /><div><span>00:00 (100%)</span><span>00:15</span></div></div>
+          <div className="retention-scrubber"><input type="range" min="0" max="15" defaultValue="1" aria-label="Video retention time" /><div><span>00:01 (76%)</span><span>00:15</span></div></div>
         </section>
-        <section className="panel traffic-sources"><h2>Traffic sources <Info /></h2></section>
+        <section className="panel analytics-list-panel traffic-sources"><h2>Traffic sources <Info /></h2><AnalyticsBars rows={trafficSources} /></section>
+        <section className="panel analytics-list-panel search-queries"><h2>Search queries <Info /></h2><AnalyticsBars rows={searchQueries} /></section>
+        <section className="panel promote-card"><div><strong>Want more traffic?</strong><span>Use Promote to grow your audience.</span></div><ChevronRight size={20} /></section>
+        <section className="other-posts"><strong>View data for other posts</strong><div>{[1, 2, 3].map(index => <Image key={index} src={`/other-post-${index}.png`} alt="" width={34} height={34} unoptimized />)}</div></section>
       </TabsContent>
       <TabsContent value="Viewers">
-        <section className="panel"><h2>Total viewers <Info /></h2><p className="muted viewer-total"><InlineValue value={project.totalViewers} label="Total viewers" type="text" onSave={value => editText('totalViewers', String(value))} /></p></section>
-        <section className="panel"><h2>Viewer types <Info /></h2><div className="viewer-placeholder"><div className="split"><b>-%</b><b>-%</b></div><div className="placeholder-bar" /><div className="split"><span>-</span><span>-</span></div></div><div className="split"><b><InlineValue value={project.nonFollowers} label="Non-followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', Number(value))} />%</b><b><InlineValue value={100 - project.nonFollowers} label="Followers percentage" onSave={value => editNumber('nonFollowers', 100 - Number(value))} /></b></div><Progress value={project.nonFollowers} aria-label="Non-followers" className="demographic-bar" /><div className="split"><span>Non-followers</span><span>Followers</span></div></section>
+        <section className="panel total-viewers-panel"><h2>Total viewers <Info /></h2><strong className="viewer-total-value"><InlineValue value={project.totalViewers} label="Total viewers" type="text" onSave={value => editText('totalViewers', String(value))} /></strong><p className="viewer-comparison">+0&nbsp; (vs 1d ago)</p></section>
+        <section className="panel viewer-types-panel"><h2>Viewer types <Info /></h2>
+          <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.newViewers} label="New viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', Number(value))} />%</strong><strong>{100 - project.newViewers}%</strong></div><div className="viewer-segments"><span style={{ width: `${project.newViewers}%` }} /><span style={{ width: `${100 - project.newViewers}%` }} /></div><div className="viewer-labels"><span>New viewers</span><span>Returning viewers</span></div></div>
+          <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.nonFollowers} label="Non-followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', Number(value))} />%</strong><strong>{100 - project.nonFollowers}%</strong></div><div className="viewer-segments"><span style={{ width: `${project.nonFollowers}%` }} /><span style={{ width: `${100 - project.nonFollowers}%` }} /></div><div className="viewer-labels"><span>Non-followers</span><span>Followers</span></div></div>
+        </section>
         <section className="panel"><h2>Gender</h2><div className="half-chart" role="img" aria-label={`Male ${project.male}%, Female ${project.female}%, Other ${project.other}%`}><div style={{ background: `conic-gradient(from -90deg,#0078d4 0deg ${project.male * 1.8}deg,#78b7e5 ${project.male * 1.8}deg ${(project.male + project.female) * 1.8}deg,#cbe3f5 ${(project.male + project.female) * 1.8}deg 180deg,transparent 180deg)` }} /></div>{[['Male', 'male', project.male, '#0078d4'], ['Female', 'female', project.female, '#78b7e5'], ['Other', 'other', project.other, '#cbe3f5']].map(([label, field, value, color]) => <div className="gender-row" key={String(field)}><i style={{ background: String(color) }} /><strong>{label}</strong><b><InlineValue value={Number(value)} label={`${label} percentage`} step="any" max={100} onSave={next => editNumber(String(field) as NumberField, Number(next))} />%</b></div>)}</section>
         <section className="panel"><h2>Age</h2><Bars rows={ageLabels.map((name, index) => ({ name, value: project.ages[index] }))} onEdit={editAge} /></section>
         <section className="panel"><h2>Locations <Info /></h2><Bars rows={project.locations} onEdit={editLocation} /></section>
