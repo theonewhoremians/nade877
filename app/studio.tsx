@@ -160,7 +160,11 @@ export default function Studio() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => { void persist({ ...project, cover: String(reader.result) }); };
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') { setNotice('Unable to read the selected thumbnail.'); return; }
+      void persist({ ...project, cover: reader.result });
+    };
+    reader.onerror = () => setNotice('Unable to read the selected thumbnail.');
     reader.readAsDataURL(file);
   }
 
@@ -173,14 +177,14 @@ export default function Studio() {
       <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={() => setEditMode(current => !current)}><UserStar size={12} />TikTok Studio</button>
     </header>
     <section className="video-summary">
-      <div className="cover-button"><button className="cover-image" disabled={!editMode} onClick={() => coverInput.current?.click()} aria-label="Replace video thumbnail"><Image src={project.cover} alt={project.title} width={80} height={80} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
+      <div className="cover-button"><button className="cover-image" onClick={() => coverInput.current?.click()} aria-label="Upload video thumbnail"><Image src={project.cover} alt={project.title} width={80} height={108} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration.toFixed(2)}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
       <input ref={coverInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { void replaceCover(e.target.files?.[0]); e.target.value = ''; }} />
       <p>Posted on <InlineValue value={project.date} label="Post date" type="text" onSave={value => editText('date', String(value))} /></p>
       <div className="counts">{[Play, Heart, MessageCircle, Forward, Bookmark].map((Icon, index) => <div key={index}><Icon aria-label={['Views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} /><InlineValue value={[project.views, project.likes, project.comments, project.shares, project.saves][index]} label={['Video views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} display={[project.views, project.likes, project.comments, project.shares, project.saves][index].toLocaleString()} onSave={value => editNumber((['views', 'likes', 'comments', 'shares', 'saves'] as NumberField[])[index], Number(value))} /></div>)}</div>
     </section>
 
     <Tabs value={tab} onValueChange={setTab}>
-      <TabsList variant="line" className="analysis-tabs">{['Inspiration', 'Overview', 'Viewers', 'Engagement'].map(item => <TabsTrigger key={item} value={item}>{item}{item === 'Inspiration' && <i className="pink-dot" />}</TabsTrigger>)}</TabsList>
+      <TabsList variant="line" className="analysis-tabs">{['Inspiration', 'Overview', 'Viewers', 'Engagement'].map(item => <TabsTrigger key={item} value={item}>{item}</TabsTrigger>)}</TabsList>
       <TabsContent value="Overview">
         <section className="panel"><h2>Key metrics <Info /></h2><p className="muted">Updated on 10/20/2026.</p>
           <div className="metrics">
@@ -199,6 +203,26 @@ export default function Studio() {
             </svg>
           </div>
         </section>
+        <section className="panel retention-panel">
+          <h2>Retention rate <Info /></h2>
+          <p className="retention-primary">On average, viewers watched 1% of your video.</p>
+          <p className="retention-copy">Most viewers stopped watching at 0:01. Check out the moment in your video where most viewers lost interest.</p>
+          <div className="retention-video">
+            <Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized />
+            {project.cover !== '/video-cover.png' && <span aria-hidden="true"><Play size={26} fill="white" strokeWidth={0} /></span>}
+          </div>
+          <div className="retention-chart" role="img" aria-label="Audience retention falls from 100 percent to about 15 percent">
+            <svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true">
+              <path className="retention-grid" d="M8 10H258 M8 50H258 M8 90H258" />
+              <path className="retention-area" d="M8 10 C23 20 34 35 55 45 S88 60 111 66 S144 72 166 76 S205 80 258 84 L258 90 H8 Z" />
+              <path className="retention-line" d="M8 10 C23 20 34 35 55 45 S88 60 111 66 S144 72 166 76 S205 80 258 84" />
+              <circle cx="8" cy="10" r="4" />
+              <g className="retention-axis"><text x="266" y="14">100%</text><text x="266" y="54">50%</text></g>
+            </svg>
+          </div>
+          <div className="retention-scrubber"><input type="range" min="0" max="15" defaultValue="0" aria-label="Video retention time" /><div><span>00:00 (100%)</span><span>00:15</span></div></div>
+        </section>
+        <section className="panel traffic-sources"><h2>Traffic sources <Info /></h2></section>
       </TabsContent>
       <TabsContent value="Viewers">
         <section className="panel"><h2>Total viewers <Info /></h2><p className="muted viewer-total"><InlineValue value={project.totalViewers} label="Total viewers" type="text" onSave={value => editText('totalViewers', String(value))} /></p></section>

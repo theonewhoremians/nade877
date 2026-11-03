@@ -45,3 +45,59 @@
 .chart-area{fill:#e5efff}
 .chart-line{fill:none;stroke:#4b91f5;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chart-axis{fill:#888;font:10px Arial,Helvetica,sans-serif}
+
+/* Match the compact TikTok Studio phone screen in the supplied references. */
+body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
+.app-header{height:60px;padding:8px 16px;gap:8px}
+.app-header h1{position:absolute;left:50%;width:100px;margin:0;transform:translateX(-50%);font-size:18px;font-weight:700;line-height:1.2;text-align:center}
+.app-header h1 .inline-title{display:block;width:100%;max-width:100%;font-size:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.studio-pill{width:112px;height:30px;margin-left:auto;justify-content:center;padding:4px 8px;border-color:transparent;font-size:13px;font-weight:600}
+.studio-pill svg{width:14px;height:14px;flex-shrink:0}
+.video-summary{padding:16px 12px 14px}
+.video-summary img,.cover-button,.cover-image{width:82px;height:108px}
+.video-summary img,.cover-image{border-radius:8px}
+.cover-button>span{bottom:4px;font-size:13px;line-height:16px}
+.video-summary p{font-size:14px;line-height:18px;margin:10px 0 16px}
+.counts{justify-content:initial}
+.counts>div{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:20%;font-size:14px;font-weight:600;line-height:18px}
+.counts>div:not(:last-child)::after{content:"";position:absolute;right:0;top:50%;width:1px;height:20px;background:#e5e5e5;transform:translateY(-50%)}
+.counts svg{width:17px;height:17px}
+.analysis-tabs{top:60px;height:38px!important;gap:8px!important;padding:0 10px!important}
+.analysis-tabs + [data-slot="tabs-content"] > .panel:first-child{margin-top:0}
+.analysis-tabs button{font-size:16px!important;font-weight:400!important;padding:8px 8px!important}
+.analysis-tabs button[data-state=active]{font-weight:600!important;border-bottom-width:2px}
+.panel{margin:6px 6px 8px;padding:16px;border-radius:11px}
+.panel h2{font-size:17px;font-weight:700;line-height:1.25;gap:5px;margin:2px 0 4px}
+.panel h2 svg{width:14px;height:14px}
+.muted{font-size:14px;line-height:20px;margin:0 0 18px}
+.metrics{gap:8px}
+.metrics>div,.metrics>button{min-height:76px;padding:11px 12px;border-radius:10px}
+.metrics>div:first-child,.metrics>button.selected{border-color:#84c2cf;background:#f2f9fb}
+.metrics span{font-size:14px;font-weight:500;line-height:1.25}
+.metrics strong{font-size:22px;font-weight:700;line-height:1.2;margin-top:2px}
+.views-chart{height:96px;margin:18px -2px 0}
+.chart-grid{stroke:#ddd;stroke-dasharray:1 4}
+.chart-area{fill:#e8f2f4}
+.chart-line{stroke:#80b9c5}
+.chart-axis{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
+.retention-panel{padding:16px}
+.retention-primary{margin:16px 0 6px;font-size:14px;font-weight:500;line-height:20px}
+.retention-copy{margin:0;color:#929292;font-size:15px;line-height:21px}
+.retention-video{position:relative;width:168px;height:264px;margin:16px auto 10px;overflow:hidden;background:#171717}
+.retention-video img{display:block;width:100%;height:100%;object-fit:cover}
+.retention-video>span{position:absolute;inset:0;display:grid;place-items:center;color:#fff}
+.retention-chart{height:60px;margin:0 -2px}
+.retention-chart svg{display:block;width:100%;height:100%;overflow:visible}
+.retention-grid{fill:none;stroke:#d8d8d8;stroke-width:1;stroke-dasharray:2 3}
+.retention-area{fill:#e7f2f4}
+.retention-line{fill:none;stroke:#70aeba;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.retention-chart circle{fill:#fff;stroke:#70aeba;stroke-width:2}
+.retention-axis{fill:#999;font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
+.retention-scrubber{margin:8px 8px 2px}
+.retention-scrubber input[type=range]{display:block;width:100%;height:4px;margin:0;padding:0;border:0;border-radius:4px;appearance:none;background:#aaa;touch-action:pan-y}
+.retention-scrubber input[type=range]::-webkit-slider-thumb{width:20px;height:20px;border:0;border-radius:50%;appearance:none;background:#fff;box-shadow:0 2px 8px #0003}
+.retention-scrubber input[type=range]::-moz-range-thumb{width:20px;height:20px;border:0;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0003}
+.retention-scrubber>div{display:flex;justify-content:space-between;margin-top:10px;color:#8b8b8b;font-size:12px;line-height:16px}
+.traffic-sources{min-height:120px}
+.traffic-sources h2{margin-bottom:16px}
+@media(max-width:600px){.app-header h1{font-size:18px}.panel{padding:16px}.analysis-tabs{gap:8px!important}.analysis-tabs button{font-size:16px!important}.metrics strong{font-size:22px}}
