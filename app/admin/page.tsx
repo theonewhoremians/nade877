@@ -93,8 +93,11 @@ export default function Admin() {
         setNotice({ kind: 'success', message: 'Access code created. Copy it and share it with its owner.' });
       } else if (action === 'delete') {
         setNotice({ kind: 'success', message: 'Access code deleted. Its user will be denied at their next access check.' });
+      } else if (action === 'reset') {
+        if (!result.license || result.license.device_id !== null) throw new Error('The device link was not cleared. Please retry.');
+        setNotice({ kind: 'success', message: 'Device link reset. This code can now be activated on another device.' });
       } else {
-        setNotice({ kind: 'success', message: action === 'reset' ? 'Device link reset.' : 'Access code updated.' });
+        setNotice({ kind: 'success', message: 'Access code updated.' });
       }
 
       const refreshed = await request('list', { query });

@@ -25,6 +25,19 @@ Deno.serve(async (request) => {
 
     const code = cleanCode(body.accessCode);
 
+    if (action === "reset") {
+      const { data, error } = await db
+        .from("licenses")
+        .update({ device_id: null })
+        .eq("access_code", code)
+        .select(adminLicenseColumns)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return json({ error: "License not found." }, 404);
+      return json({ license: data });
+    }
+
     if (action === "delete") {
       const { data, error } = await db.from("licenses").delete().eq("access_code", code).select("access_code").maybeSingle();
       if (error) throw error;
