@@ -43,7 +43,7 @@ function parseProject(raw: string) {
 }
 function emptyProject() { return ''; }
 
-function InlineValue({ value, label, onSave, type = 'number', display, step = 1, min = 0, max, className = '' }: {
+function InlineValue({ value, label, onSave, type = 'number', display, step = 1, min = 0, max, className = '', staticMode = false }: {
   value: string | number;
   label: string;
   onSave: (value: string | number) => void;
@@ -53,30 +53,44 @@ function InlineValue({ value, label, onSave, type = 'number', display, step = 1,
   min?: number;
   max?: number;
   className?: string;
+  staticMode?: boolean;
 }) {
   const editable = useContext(EditingContext);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
   const cancel = useRef(false);
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (editing) {
       input.current?.focus();
-      input.current?.select();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      if (input.current) {
+        range.selectNodeContents(input.current);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
     }
   }, [editing]);
   function commit() {
     setEditing(false);
-    const next = type === 'number' ? Number(draft) : draft.trim();
+    const nextDraft = input.current?.textContent ?? draft;
+    window.getSelection()?.removeAllRanges();
+    const next = type === 'number' ? Number(nextDraft) : nextDraft.trim();
     if (type === 'number' && !Number.isFinite(next)) return;
     if (String(next) !== String(value)) onSave(next);
   }
-  if (editing && editable) return <input ref={input} className={`inline-input ${className}`} aria-label={label} type={type} min={type === 'number' ? min : undefined} max={type === 'number' ? max : undefined} step={type === 'number' ? step : undefined} value={draft} onChange={e => setDraft(e.target.value)} onBlur={() => { if (cancel.current) { cancel.current = false; return; } commit(); }} onKeyDown={e => {
+  function beginEdit() {
+    setDraft(String(value));
+    setEditing(true);
+  }
+  if (editing && editable) return <span ref={input} className={`inline-input ${className}`} role="textbox" aria-label={label} aria-multiline="false" contentEditable suppressContentEditableWarning spellCheck={false} inputMode={type === 'number' ? 'decimal' : 'text'} onInput={e => setDraft(e.currentTarget.textContent ?? '')} onBlur={() => { if (cancel.current) { cancel.current = false; return; } commit(); }} onKeyDown={e => {
     if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
-    if (e.key === 'Escape') { cancel.current = true; setDraft(String(value)); setEditing(false); }
-  }} />;
+    if (e.key === 'Escape') { cancel.current = true; setDraft(String(value)); window.getSelection()?.removeAllRanges(); setEditing(false); }
+  }}>{draft}</span>;
   if (!editable) return <span className={`inline-value view-value ${className}`}>{display ?? value}</span>;
-  return <button type="button" className={`inline-value ${className}`} aria-label={`Edit ${label}: ${display ?? value}`} onClick={e => { e.stopPropagation(); setDraft(String(value)); setEditing(true); }}>{display ?? value}</button>;
+  if (staticMode) return <span role="button" tabIndex={0} className={`inline-value edit-value ${className}`} aria-label={`Edit ${label}: ${display ?? value}`} onClick={e => { e.stopPropagation(); beginEdit(); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); beginEdit(); } }}>{display ?? value}</span>;
+  return <button type="button" className={`inline-value ${className}`} aria-label={`Edit ${label}: ${display ?? value}`} onClick={e => { e.stopPropagation(); beginEdit(); }}>{display ?? value}</button>;
 }
 
 function Bars({ rows, onEdit }: { rows: { name: string; value: number }[]; onEdit: (index: number, value: number) => void }) {
@@ -202,11 +216,11 @@ export default function Studio() {
       <TabsContent value="Overview">
         <section className="panel key-metrics-panel"><h2>Key metrics <Info /></h2><p className="muted">Updated on 10/20/2026.</p>
           <div className="metrics">
-            <div className="selected"><span>Video views</span><strong><InlineValue value={project.views} label="Video views" display={Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(project.views)} onSave={value => editNumber('views', Number(value))} /></strong></div>
-            <div><span>Total play time</span><strong><InlineValue value={project.playTime} label="Total play time" type="text" onSave={value => editText('playTime', String(value))} /></strong></div>
-            <div><span>Average watch time</span><strong><InlineValue value={project.watchTime} label="Average watch time in seconds" display={`${project.watchTime}s`} step="any" onSave={value => editNumber('watchTime', Number(value))} /></strong></div>
-            <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} onSave={value => editNumber('completion', Number(value))} /></strong></div>
-            <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" onSave={value => editNumber('followers', Number(value))} /></strong></div>
+            <div className="selected"><span>Video views</span><strong><InlineValue value={project.views} label="Video views" display={Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(project.views)} staticMode onSave={value => editNumber('views', Number(value))} /></strong></div>
+            <div><span>Total play time</span><strong><InlineValue value={project.playTime} label="Total play time" type="text" staticMode onSave={value => editText('playTime', String(value))} /></strong></div>
+            <div><span>Average watch time</span><strong><InlineValue value={project.watchTime} label="Average watch time in seconds" display={`${project.watchTime}s`} step="any" staticMode onSave={value => editNumber('watchTime', Number(value))} /></strong></div>
+            <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} staticMode onSave={value => editNumber('completion', Number(value))} /></strong></div>
+            <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" staticMode onSave={value => editNumber('followers', Number(value))} /></strong></div>
           </div>
           <div className="views-chart" role="img" aria-label="Video views from September 21 to September 27">
             <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">

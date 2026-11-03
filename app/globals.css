@@ -137,3 +137,9 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .half-chart>div:after{inset:31px}
 .gender-row{gap:12px;padding:12px 0;font-size:16px}
 @media(max-width:600px){.app-header h1{font-size:18px}.panel{padding:16px}.analysis-tabs{gap:8px!important}.analysis-tabs button{font-size:16px!important}.metrics strong{font-size:22px}}
+.inline-value{appearance:none;vertical-align:baseline}
+.inline-value:hover{outline:0}
+.inline-value:focus-visible{outline:0;text-decoration:underline dotted;text-underline-offset:2px}
+.inline-value.edit-value{cursor:text}
+.inline-input{display:inline-block;appearance:none;vertical-align:baseline;font:inherit;color:inherit;background:transparent;border:0;border-radius:0;padding:0;margin:0;line-height:inherit;max-width:100%;min-width:1ch;width:auto;text-align:inherit;outline:none;box-shadow:none;caret-color:#0078d4;white-space:pre-wrap;overflow-wrap:anywhere}
+.inline-input:focus-visible{outline:none}
