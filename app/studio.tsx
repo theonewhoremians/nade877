@@ -8,11 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { defaultProject, projectSchema, type Project } from '@/lib/project';
 
 const ageLabels = ['18 - 24', '25 - 34', '35 - 44', '45 - 54', '55+'];
-const trafficSources = [{ name: 'For You', value: 99.5 }, { name: 'Personal profile', value: 0.4 }, { name: 'Search', value: 0.1 }, { name: 'Other', value: 0 }, { name: 'Sound', value: 0 }, { name: 'Following', value: 0 }];
-const searchQueries = [{ name: 'candid nyc', value: 16.7 }, { name: 'The candid club', value: 16.7 }, { name: 'comfort zone club', value: 16.7 }, { name: 'Candid nyc', value: 16.7 }, { name: 'the candid club', value: 16.7 }];
 const projectKey = 'analytics-studio-project-v1';
 const EditingContext = createContext(false);
-type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'followers' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
+type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'averageRetention' | 'followers' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
 type TrendField = 'viewTrend' | 'retentionTrend' | 'likesTrend';
 type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
 
@@ -102,8 +100,8 @@ function Bars({ rows, onEdit }: { rows: { name: string; value: number }[]; onEdi
   return <div className="bar-list">{rows.map((row, index) => <div key={index}><div className="bar-label"><span>{row.name}</span><b><InlineValue value={row.value} label={`${row.name} viewers percentage`} step="any" max={100} onSave={value => onEdit(index, Number(value))} />%</b></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
 }
 
-function AnalyticsBars({ rows }: { rows: { name: string; value: number }[] }) {
-  return <div className="analytics-bars">{rows.map(row => <div className="analytics-bar-row" key={row.name}><div><span>{row.name}</span><strong>{row.value.toFixed(1)}%</strong></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
+function AnalyticsBars({ rows, onEdit }: { rows: { name: string; value: number }[]; onEdit: (index: number, value: number) => void }) {
+  return <div className="analytics-bars">{rows.map((row, index) => <div className="analytics-bar-row" key={row.name}><div><span>{row.name}</span><strong><InlineValue value={row.value} display={row.value.toFixed(1)} label={`${row.name} percentage`} step="any" max={100} staticMode onSave={value => onEdit(index, Number(value))} />%</strong></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
 }
 
 function EditableTrendGraph({ values, maxValue, editMode, onChange, className, label, width, height, plot, gridLevels = [], axisLabels = [], bottomLabels = [], smooth = false, area = false, highlightIndex = -1 }: {
@@ -206,6 +204,11 @@ export default function Studio() {
   const [valid, setValid] = useState(true);
   const [busy, setBusy] = useState(false);
   const [engagementSecond, setEngagementSecond] = useState(0);
+  const [retentionSecond, setRetentionSecond] = useState(1);
+  const durationSeconds = Math.max(1, Math.floor(project.duration));
+  const selectedRetentionSecond = Math.min(retentionSecond, durationSeconds);
+  const retentionPointIndex = Math.round(selectedRetentionSecond / durationSeconds * (project.retentionTrend.length - 1));
+  const retentionPercent = project.retentionTrend[retentionPointIndex];
   const coverInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -260,24 +263,33 @@ export default function Studio() {
   }
 
   function editNumber(field: NumberField, value: number) {
-    const next = { ...project, [field]: value } as Project;
-    if (field === 'male') next.other = 100 - next.male - next.female;
-    if (field === 'female') next.other = 100 - next.male - next.female;
-    if (field === 'other') next.female = 100 - next.male - next.other;
+    const percentFields: NumberField[] = ['completion', 'averageRetention', 'newViewers', 'nonFollowers', 'male', 'female', 'other'];
+    const safeValue = percentFields.includes(field) ? Math.max(0, Math.min(100, value)) : value;
+    const next = { ...project, [field]: safeValue } as Project;
+    if (field === 'male') { next.male = Math.min(safeValue, 100 - next.female); next.other = 100 - next.male - next.female; }
+    if (field === 'female') { next.female = Math.min(safeValue, 100 - next.male); next.other = 100 - next.male - next.female; }
+    if (field === 'other') { next.other = Math.min(safeValue, 100 - next.male); next.female = 100 - next.male - next.other; }
     void persist(next);
   }
   function editText(field: TextField, value: string) { void persist({ ...project, [field]: value }); }
   function editTrend(field: TrendField, values: number[]) { void persist({ ...project, [field]: values }); }
   function editAge(index: number, value: number) {
     const ages = [...project.ages];
-    ages[index] = value;
     const balanceIndex = index === ages.length - 1 ? ages.length - 2 : ages.length - 1;
-    ages[balanceIndex] = 100 - ages.reduce((total, age, i) => total + (i === balanceIndex ? 0 : age), 0);
+    const fixedTotal = ages.reduce((total, age, i) => total + (i === index || i === balanceIndex ? 0 : age), 0);
+    ages[index] = Math.min(Math.max(0, value), 100 - fixedTotal);
+    ages[balanceIndex] = 100 - fixedTotal - ages[index];
     void persist({ ...project, ages });
   }
   function editLocation(index: number, value: number) {
-    const locations = project.locations.map((location, i) => i === index ? { ...location, value } : location);
+    const otherTotal = project.locations.reduce((total, location, i) => total + (i === index ? 0 : location.value), 0);
+    const available = Math.max(0, 100 - otherTotal);
+    const locations = project.locations.map((location, i) => i === index ? { ...location, value: Math.min(Math.max(0, value), available) } : location);
     void persist({ ...project, locations });
+  }
+  function editAnalyticsRow(field: 'trafficSources' | 'searchQueries', index: number, value: number) {
+    const rows = project[field].map((row, i) => i === index ? { ...row, value: Math.max(0, Math.min(100, value)) } : row);
+    void persist({ ...project, [field]: rows });
   }
   async function replaceCover(file?: File) {
     if (!file) return;
@@ -297,7 +309,7 @@ export default function Studio() {
   if (rawProject === null) return <main className="phone" aria-busy="true" />;
   if (!valid) return <main className="activation"><div className="activation-card"><h1>Check your access</h1><p>Your session expired or could not be verified. Re-enter your access code to continue.</p><button className="primary" onClick={() => window.location.reload()}>Continue to activation</button></div></main>;
 
-  return <EditingContext.Provider value={editMode}><main className={`phone ${tab === 'Engagement' ? 'engagement-view' : ''}`}>
+  return <EditingContext.Provider value={editMode}><main className="phone">
     <header className="app-header">
       <button className="icon-button" aria-label="Back to overview" onClick={() => setTab('Overview')}><ArrowLeft size={20} /></button>
       <h1><InlineValue value={project.title} display="Video analytics" label="Video title" type="text" className="inline-title" onSave={value => editText('title', String(value))} /></h1>
@@ -326,25 +338,25 @@ export default function Studio() {
         </section>
         <section className="panel retention-panel">
           <h2>Retention rate <Info /></h2>
-          <p className="retention-primary">On average, viewers watched 1% of your video.</p>
+          <p className="retention-primary">On average, viewers watched <InlineValue value={project.averageRetention} label="Average retention percentage" step="any" max={100} staticMode onSave={value => editNumber('averageRetention', Number(value))} />% of your video.</p>
           <p className="retention-copy">Most viewers stopped watching at 0:01. Check out the moment in your video where most viewers lost interest.</p>
           <div className="retention-video">
             <Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized />
             {project.cover !== '/video-cover.png' && <span aria-hidden="true"><Play size={26} fill="white" strokeWidth={0} /></span>}
           </div>
           <EditableTrendGraph className="retention-chart editable-graph" label="Audience retention" values={project.retentionTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('retentionTrend', values)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 90 }} gridLevels={[1, 0.5, 0]} axisLabels={[{ text: '100%', x: 266, y: 14 }, { text: '50%', x: 266, y: 54 }]} smooth area highlightIndex={0} />
-          <div className="retention-scrubber"><input type="range" min="0" max="15" defaultValue="1" aria-label="Video retention time" /><div><span>00:01 (76%)</span><span>00:15</span></div></div>
+          <div className="retention-scrubber"><input type="range" min="0" max={durationSeconds} value={selectedRetentionSecond} onChange={event => setRetentionSecond(Number(event.target.value))} aria-label="Video retention time" /><div><span>00:{String(selectedRetentionSecond).padStart(2, '0')} (<InlineValue value={retentionPercent} label="Retention percentage at selected time" step="any" max={100} staticMode onSave={value => { const trend = [...project.retentionTrend]; trend[retentionPointIndex] = Math.max(0, Math.min(100, Number(value))); editTrend('retentionTrend', trend); }} />%)</span><span>00:{String(durationSeconds).padStart(2, '0')}</span></div></div>
         </section>
-        <section className="panel analytics-list-panel traffic-sources"><h2>Traffic sources <Info /></h2><AnalyticsBars rows={trafficSources} /></section>
-        <section className="panel analytics-list-panel search-queries"><h2>Search queries <Info /></h2><AnalyticsBars rows={searchQueries} /></section>
+        <section className="panel analytics-list-panel traffic-sources"><h2>Traffic sources <Info /></h2><AnalyticsBars rows={project.trafficSources} onEdit={(index, value) => editAnalyticsRow('trafficSources', index, value)} /></section>
+        <section className="panel analytics-list-panel search-queries"><h2>Search queries <Info /></h2><AnalyticsBars rows={project.searchQueries} onEdit={(index, value) => editAnalyticsRow('searchQueries', index, value)} /></section>
         <section className="panel promote-card"><div><strong>Want more traffic?</strong><span>Use Promote to grow your audience.</span></div><ChevronRight size={20} /></section>
         <section className="other-posts"><strong>View data for other posts</strong><div>{[1, 2, 3].map(index => <Image key={index} src={`/other-post-${index}.png`} alt="" width={34} height={34} unoptimized />)}</div></section>
       </TabsContent>
       <TabsContent value="Viewers">
         <section className="panel total-viewers-panel"><h2>Total viewers <Info /></h2><strong className="viewer-total-value"><InlineValue value={project.totalViewers} label="Total viewers" type="text" onSave={value => editText('totalViewers', String(value))} /></strong><p className="viewer-comparison">+0&nbsp; (vs 1d ago)</p></section>
         <section className="panel viewer-types-panel"><h2>Viewer types <Info /></h2>
-          <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.newViewers} label="New viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', Number(value))} />%</strong><strong>{100 - project.newViewers}%</strong></div><div className="viewer-segments"><span style={{ width: `${project.newViewers}%` }} /><span style={{ width: `${100 - project.newViewers}%` }} /></div><div className="viewer-labels"><span>New viewers</span><span>Returning viewers</span></div></div>
-          <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.nonFollowers} label="Non-followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', Number(value))} />%</strong><strong>{100 - project.nonFollowers}%</strong></div><div className="viewer-segments"><span style={{ width: `${project.nonFollowers}%` }} /><span style={{ width: `${100 - project.nonFollowers}%` }} /></div><div className="viewer-labels"><span>Non-followers</span><span>Followers</span></div></div>
+          <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.newViewers} label="New viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', Number(value))} />%</strong><strong><InlineValue value={100 - project.newViewers} label="Returning viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', 100 - Number(value))} />%</strong></div><div className="viewer-segments"><span style={{ width: `${project.newViewers}%` }} /><span style={{ width: `${100 - project.newViewers}%` }} /></div><div className="viewer-labels"><span>New viewers</span><span>Returning viewers</span></div></div>
+          <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.nonFollowers} label="Non-followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', Number(value))} />%</strong><strong><InlineValue value={100 - project.nonFollowers} label="Followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', 100 - Number(value))} />%</strong></div><div className="viewer-segments"><span style={{ width: `${project.nonFollowers}%` }} /><span style={{ width: `${100 - project.nonFollowers}%` }} /></div><div className="viewer-labels"><span>Non-followers</span><span>Followers</span></div></div>
         </section>
         <section className="panel"><h2>Gender</h2><div className="half-chart" role="img" aria-label={`Male ${project.male}%, Female ${project.female}%, Other ${project.other}%`}><div style={{ background: `conic-gradient(from -90deg,#0078d4 0deg ${project.male * 1.8}deg,#78b7e5 ${project.male * 1.8}deg ${(project.male + project.female) * 1.8}deg,#cbe3f5 ${(project.male + project.female) * 1.8}deg 180deg,transparent 180deg)` }} /></div>{[['Male', 'male', project.male, '#0078d4'], ['Female', 'female', project.female, '#78b7e5'], ['Other', 'other', project.other, '#cbe3f5']].map(([label, field, value, color]) => <div className="gender-row" key={String(field)}><i style={{ background: String(color) }} /><strong>{label}</strong><b><InlineValue value={Number(value)} label={`${label} percentage`} step="any" max={100} onSave={next => editNumber(String(field) as NumberField, Number(next))} />%</b></div>)}</section>
         <section className="panel"><h2>Age</h2><Bars rows={ageLabels.map((name, index) => ({ name, value: project.ages[index] }))} onEdit={editAge} /></section>
@@ -355,9 +367,9 @@ export default function Studio() {
         <section className="panel engagement-panel engagement-likes-panel">
           <h2>Likes <Info /></h2>
           <p className="engagement-copy">Most viewers liked this video at 0:01. Check out the moment where most viewers liked your video.</p>
-          <div className="engagement-video"><Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized /><span aria-hidden="true"><Play size={36} fill="white" strokeWidth={0} /></span></div>
+          <div className="engagement-video"><Image src={project.cover === '/video-cover.png' ? '/video-preview.png' : project.cover} alt="Video thumbnail" width={168} height={264} unoptimized />{project.cover !== '/video-cover.png' && <span aria-hidden="true"><Play size={36} fill="white" strokeWidth={0} /></span>}</div>
           <EditableTrendGraph className="engagement-chart editable-graph" label="Likes over the video timeline" values={project.likesTrend} maxValue={80} editMode={editMode} onChange={values => editTrend('likesTrend', values)} width={300} height={100} plot={{ left: 8, right: 258, top: 10, bottom: 80 }} gridLevels={[1, 0.75, 0.5, 0.25]} axisLabels={[{ text: '80%', x: 266, y: 14 }, { text: '60%', x: 266, y: 32 }, { text: '40%', x: 266, y: 47 }, { text: '20%', x: 266, y: 62 }]} area highlightIndex={0} />
-          <div className="engagement-scrubber"><input type="range" min="0" max={Math.max(1, Math.ceil(project.duration))} value={engagementSecond} onChange={event => setEngagementSecond(Number(event.target.value))} aria-label="Likes graph timeline" /></div>
+          <div className="engagement-scrubber"><input type="range" min="0" max={durationSeconds} value={engagementSecond} onChange={event => setEngagementSecond(Number(event.target.value))} aria-label="Likes graph timeline" /></div>
         </section>
       </TabsContent>
       <TabsContent value="Inspiration"><section className="panel"><h2>Inspiration</h2><p className="muted">No inspiration data was included in this video.</p><button className="primary" onClick={() => setTab('Overview')}>View video metrics</button></section></TabsContent>

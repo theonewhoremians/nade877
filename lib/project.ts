@@ -1,5 +1,107 @@
-import {z} from 'zod';
-const percent=z.number().min(0).max(100);
-export const projectSchema=z.object({title:z.string().max(300),date:z.string().max(100),duration:z.number().positive().max(36000),views:z.number().int().min(0),likes:z.number().int().min(0),comments:z.number().int().min(0),shares:z.number().int().min(0),saves:z.number().int().min(0),playTime:z.string().max(50),watchTime:z.number().min(0),completion:percent,followers:z.number().int().min(0),totalViewers:z.string().max(40),newViewers:percent.default(71),nonFollowers:percent,male:percent,female:percent,other:percent,ages:z.array(percent).length(5),locations:z.array(z.object({name:z.string().min(1).max(60),value:percent})).min(1).max(15),viewTrend:z.array(percent).length(7).default([0,0,0,0,0,0,0]),retentionTrend:z.array(percent).length(9).default([100,62,45,36,29,26,24,23,22]),likesTrend:z.array(percent).length(11).default([0,65,0,0,0,0,0,0,0,32,0]),restricted:z.boolean(),cover:z.string().max(2800000).refine(s=>s==='/video-cover.png'||/^data:image\/(png|jpeg|webp);base64,/.test(s))}).refine(p=>Math.abs(p.male+p.female+p.other-100)<.2,{message:'Gender percentages must add up to 100.'}).refine(p=>Math.abs(p.ages.reduce((a,b)=>a+b,0)-100)<.2,{message:'Age percentages must add up to 100.'}).refine(p=>p.locations.reduce((a,b)=>a+b.value,0)<=100.2,{message:'Location percentages cannot exceed 100.'});
-export type Project=z.infer<typeof projectSchema>;
-export const defaultProject:Project={title:'Video analytics',date:'Sep 21, 2026, 10:54 PM',duration:15.2,views:5619,likes:79,comments:0,shares:20,saves:58,playTime:'0h:13m:28s',watchTime:.1,completion:.46,followers:0,totalViewers:'5.3K',newViewers:71,nonFollowers:100,male:26,female:66,other:8,ages:[24,44,16,8,8],locations:[{name:'United Kingdom',value:91.2},{name:'United States',value:3},{name:'Ireland',value:.5},{name:'Lebanon',value:.5},{name:'Poland',value:.5},{name:'United Arab Emirates',value:.3}],viewTrend:[0,0,0,0,0,0,0],retentionTrend:[100,62,45,36,29,26,24,23,22],likesTrend:[0,65,0,0,0,0,0,0,0,32,0],restricted:true,cover:'/video-cover.png'};
+import { z } from 'zod';
+
+const percent = z.number().min(0).max(100);
+const analyticsRow = z.object({ name: z.string().min(1).max(60), value: percent });
+
+export const projectSchema = z.object({
+  title: z.string().max(300),
+  date: z.string().max(100),
+  duration: z.number().positive().max(36000),
+  views: z.number().int().min(0),
+  likes: z.number().int().min(0),
+  comments: z.number().int().min(0),
+  shares: z.number().int().min(0),
+  saves: z.number().int().min(0),
+  playTime: z.string().max(50),
+  watchTime: z.number().min(0),
+  completion: percent,
+  averageRetention: percent.default(1),
+  followers: z.number().int().min(0),
+  totalViewers: z.string().max(40),
+  newViewers: percent.default(71),
+  nonFollowers: percent,
+  male: percent,
+  female: percent,
+  other: percent,
+  ages: z.array(percent).length(5),
+  locations: z.array(analyticsRow).min(1).max(15),
+  trafficSources: z.array(analyticsRow).length(6).default([
+    { name: 'For You', value: 99.5 },
+    { name: 'Personal profile', value: 0.4 },
+    { name: 'Search', value: 0.1 },
+    { name: 'Other', value: 0 },
+    { name: 'Sound', value: 0 },
+    { name: 'Following', value: 0 },
+  ]),
+  searchQueries: z.array(analyticsRow).length(5).default([
+    { name: 'candid nyc', value: 16.7 },
+    { name: 'The candid club', value: 16.7 },
+    { name: 'comfort zone club', value: 16.7 },
+    { name: 'Candid nyc', value: 16.7 },
+    { name: 'the candid club', value: 16.7 },
+  ]),
+  viewTrend: z.array(percent).length(7).default([0, 0, 0, 0, 0, 0, 0]),
+  retentionTrend: z.array(percent).length(9).default([100, 76, 52, 39, 30, 26, 24, 23, 22]),
+  likesTrend: z.array(percent).length(11).default([0, 65, 0, 0, 0, 0, 0, 0, 0, 32, 0]),
+  restricted: z.boolean(),
+  cover: z.string().max(2800000).refine(value => value === '/video-cover.png' || /^data:image\/(png|jpeg|webp);base64,/.test(value)),
+}).refine(project => Math.abs(project.male + project.female + project.other - 100) < 0.2, {
+  message: 'Gender percentages must add up to 100.',
+}).refine(project => Math.abs(project.ages.reduce((total, value) => total + value, 0) - 100) < 0.2, {
+  message: 'Age percentages must add up to 100.',
+}).refine(project => project.locations.reduce((total, row) => total + row.value, 0) <= 100.2, {
+  message: 'Location percentages cannot exceed 100.',
+});
+
+export type Project = z.infer<typeof projectSchema>;
+
+export const defaultProject: Project = {
+  title: 'Video analytics',
+  date: 'Sep 21, 2026, 10:54 PM',
+  duration: 15.2,
+  views: 5619,
+  likes: 79,
+  comments: 0,
+  shares: 20,
+  saves: 58,
+  playTime: '0h:13m:28s',
+  watchTime: 0.1,
+  completion: 0.46,
+  averageRetention: 1,
+  followers: 0,
+  totalViewers: '5.3K',
+  newViewers: 71,
+  nonFollowers: 100,
+  male: 26,
+  female: 66,
+  other: 8,
+  ages: [24, 44, 16, 8, 8],
+  locations: [
+    { name: 'United Kingdom', value: 91.2 },
+    { name: 'United States', value: 3 },
+    { name: 'Ireland', value: 0.5 },
+    { name: 'Lebanon', value: 0.5 },
+    { name: 'Poland', value: 0.5 },
+    { name: 'United Arab Emirates', value: 0.3 },
+  ],
+  trafficSources: [
+    { name: 'For You', value: 99.5 },
+    { name: 'Personal profile', value: 0.4 },
+    { name: 'Search', value: 0.1 },
+    { name: 'Other', value: 0 },
+    { name: 'Sound', value: 0 },
+    { name: 'Following', value: 0 },
+  ],
+  searchQueries: [
+    { name: 'candid nyc', value: 16.7 },
+    { name: 'The candid club', value: 16.7 },
+    { name: 'comfort zone club', value: 16.7 },
+    { name: 'Candid nyc', value: 16.7 },
+    { name: 'the candid club', value: 16.7 },
+  ],
+  viewTrend: [0, 0, 0, 0, 0, 0, 0],
+  retentionTrend: [100, 76, 52, 39, 30, 26, 24, 23, 22],
+  likesTrend: [0, 65, 0, 0, 0, 0, 0, 0, 0, 32, 0],
+  restricted: true,
+  cover: '/video-cover.png',
+};

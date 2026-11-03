@@ -144,7 +144,6 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .inline-input{display:inline-block;appearance:none;vertical-align:baseline;font:inherit;color:inherit;background:transparent;border:0;border-radius:0;padding:0;margin:0;line-height:inherit;max-width:100%;min-width:1ch;width:auto;text-align:inherit;outline:none;box-shadow:none;caret-color:#0078d4;white-space:pre-wrap;overflow-wrap:anywhere}
 .inline-input:focus-visible{outline:none}
 .key-metrics-panel .metrics strong .inline-value{font-size:inherit;font-weight:inherit;line-height:inherit}
-.engagement-view .video-summary{display:none}
 .engagement-panel{padding:16px;margin:6px 6px 8px}
 .engagement-panel h2{font-size:17px;line-height:22px;font-weight:700;gap:6px;margin:2px 0 4px}
 .engagement-panel h2 svg{width:20px!important;height:20px!important;stroke-width:1.8}
