@@ -187,12 +187,13 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 
 /* Larger, clearer summary elements and gentle motion while honoring reduced-motion preferences. */
 .video-summary img,.cover-button,.cover-image{width:90.2px;height:118.8px}
+.retention-video,.engagement-video{width:184.8px;height:290.4px}
 .counts svg{width:28.9px;height:28.9px}
 .phone h1,.phone h2,.phone h3,.phone h4{font-weight:980}
 .phone .analysis-tabs button{font-weight:560!important}
 .phone .analysis-tabs button[data-state=active]{font-weight:840!important}
-.phone .metrics span,.phone .bar-label,.phone .viewer-percentages strong,.phone .retention-primary{font-weight:700}
-.phone .video-summary p,.phone .retention-copy,.phone .engagement-copy,.phone .engagement-words-panel>p{font-weight:560}
+.phone .counts>div,.phone .metrics span,.phone .bar-label,.phone .analytics-bar-row strong,.phone .viewer-percentages strong,.phone .retention-primary{font-weight:700}
+.phone .muted,.phone .video-summary p,.phone .chart-note,.phone .viewer-labels,.phone .viewer-comparison,.phone .retention-copy,.phone .engagement-copy,.phone .engagement-words-panel>p,.phone .promote-card span{font-weight:560}
 .phone,.phone button,.phone a,.phone .panel,.phone img,.phone svg{transition:color .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
 html:focus-within{scroll-behavior:smooth}
 @media(prefers-reduced-motion:reduce){html:focus-within{scroll-behavior:auto}.phone,.phone button,.phone a,.phone .panel,.phone img,.phone svg{transition:none}}

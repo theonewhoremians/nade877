@@ -167,7 +167,7 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
       const boxX = textAnchor === 'end' ? tick.x - boxWidth : tick.x;
       const boxY = bottom ? height - 20 : textY - 12;
       return <foreignObject key={`${tick.axis}-${tick.index}`} x={boxX} y={boxY} width={boxWidth} height={18}>
-        <div xmlns="http://www.w3.org/1999/xhtml" className="graph-axis-edit" style={{ textAlign: textAnchor }}>
+        <div className="graph-axis-edit" style={{ textAlign: textAnchor }}>
           <InlineValue value={tick.text} display={tick.text} label={`Edit ${tick.axis}-axis label ${tick.index + 1} on ${label}`} type="text" staticMode onSave={value => onAxisEdit(tick.axis, tick.index, String(value))} />
         </div>
       </foreignObject>;
@@ -229,7 +229,7 @@ export default function Studio() {
   const retentionPointIndex = Math.round(selectedRetentionSecond / durationSeconds * (project.retentionTrend.length - 1));
   const retentionPercent = project.retentionTrend[retentionPointIndex];
   const coverInput = useRef<HTMLInputElement>(null);
-  const savedToastTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const savedToastTimer = useRef<number | null>(null);
 
   useEffect(() => () => {
     if (savedToastTimer.current !== null) window.clearTimeout(savedToastTimer.current);
