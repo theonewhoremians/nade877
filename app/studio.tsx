@@ -202,7 +202,6 @@ export default function Studio() {
   const [editMode, setEditMode] = useState(false);
   const [notice, setNotice] = useState('');
   const [valid, setValid] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [engagementSecond, setEngagementSecond] = useState(0);
   const [retentionSecond, setRetentionSecond] = useState(1);
   const durationSeconds = Math.max(1, Math.floor(project.duration));
@@ -210,6 +209,11 @@ export default function Studio() {
   const retentionPointIndex = Math.round(selectedRetentionSecond / durationSeconds * (project.retentionTrend.length - 1));
   const retentionPercent = project.retentionTrend[retentionPointIndex];
   const coverInput = useRef<HTMLInputElement>(null);
+  const savedToastTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (savedToastTimer.current !== null) window.clearTimeout(savedToastTimer.current);
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -250,16 +254,29 @@ export default function Studio() {
   async function persist(next: Project) {
     const parsed = projectSchema.safeParse(next);
     if (!parsed.success) { setNotice(parsed.error.issues[0].message); return; }
-    setBusy(true);
-    setNotice('Saving…');
+    setNotice('');
     try {
       if (!(await fetch('/api/license')).ok) { setValid(false); throw new Error('Access expired.'); }
       try { window.localStorage?.setItem(projectKey, JSON.stringify(parsed.data)); }
       catch { throw new Error('Your browser is blocking storage, so edits cannot be saved on this device.'); }
       window.dispatchEvent(new Event(projectKey));
-      setNotice('Saved on this device.');
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Save failed.'); }
-    finally { setBusy(false); }
+  }
+
+  function toggleEditMode() {
+    if (savedToastTimer.current !== null) window.clearTimeout(savedToastTimer.current);
+    savedToastTimer.current = null;
+    if (editMode && !notice) {
+      const savedMessage = 'Saved on this device.';
+      setNotice(savedMessage);
+      savedToastTimer.current = window.setTimeout(() => {
+        setNotice(current => current === savedMessage ? '' : current);
+        savedToastTimer.current = null;
+      }, 1000);
+    } else if (!editMode && notice === 'Saved on this device.') {
+      setNotice('');
+    }
+    setEditMode(!editMode);
   }
 
   function editNumber(field: NumberField, value: number) {
@@ -313,7 +330,7 @@ export default function Studio() {
     <header className="app-header">
       <button className="icon-button" aria-label="Back to overview" onClick={() => setTab('Overview')}><ArrowLeft size={20} /></button>
       <h1><InlineValue value={project.title} display="Video analytics" label="Video title" type="text" className="inline-title" onSave={value => editText('title', String(value))} /></h1>
-      <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={() => setEditMode(current => !current)}><StudioBadgeIcon />TikTok Studio</button>
+      <button type="button" className={`studio-pill ${editMode ? 'is-editing' : ''}`} aria-label={editMode ? 'Exit edit mode' : 'Enter edit mode'} aria-pressed={editMode} onClick={toggleEditMode}><StudioBadgeIcon />TikTok Studio</button>
     </header>
     <section className="video-summary">
       <div className="cover-button"><button className="cover-image" onClick={() => coverInput.current?.click()} aria-label="Upload video thumbnail"><Image src={project.cover} alt={project.title} width={80} height={108} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration.toFixed(2)}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
@@ -374,6 +391,6 @@ export default function Studio() {
       </TabsContent>
       <TabsContent value="Inspiration"><section className="panel"><h2>Inspiration</h2><p className="muted">No inspiration data was included in this video.</p><button className="primary" onClick={() => setTab('Overview')}>View video metrics</button></section></TabsContent>
     </Tabs>
-    {!busy && notice && <div className="save-toast" role="status"><Check size={16} />{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}>×</button></div>}
+    {notice && <div className="save-toast" role="status"><Check size={16} />{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}>×</button></div>}
   </main></EditingContext.Provider>;
 }
