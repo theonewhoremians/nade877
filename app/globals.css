@@ -177,6 +177,8 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .editable-graph .trend-point-hit:focus-visible+.trend-point{stroke:#0078d4;stroke-width:3}
 .views-chart{height:136px;margin:18px -2px 0}
 .views-chart svg,.retention-chart svg{display:block;width:100%;height:100%;overflow:visible}
+.metric-sparkline{height:34px;margin:6px -2px -3px}
+.metric-sparkline svg{display:block;width:100%;height:100%;overflow:visible}
 .views-chart .trend-line{stroke:#729eaa;stroke-linecap:butt;stroke-linejoin:miter;filter:none}
 .views-chart .trend-area{fill:#e7f2f4}
 .retention-chart{height:60px;margin:0 -2px}
@@ -187,8 +189,9 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 @media(max-width:600px){.engagement-panel{padding:16px}.engagement-video{width:168px;height:264px}}
 
 .editable-graph.is-editing-graph,.editable-graph.is-editing-graph svg{touch-action:none;overscroll-behavior:contain;user-select:none}
-.key-metrics-panel h2{font-weight:1000!important;-webkit-text-stroke:.5px currentColor}
-.key-metrics-panel .metrics strong{font-weight:1000;-webkit-text-stroke:.5px currentColor}
+.key-metrics-panel h2,.key-metrics-panel .metrics strong{font-weight:1000!important;-webkit-text-stroke:.6px currentColor}
+.key-metrics-panel .metrics>div>span{font-weight:840!important;-webkit-text-stroke:.1px currentColor}
+.counts>div:nth-child(4)>svg{width:24.28px;height:24.28px}
 .half-chart>div{transition:background .24s ease}
 
 /* Larger, clearer summary elements and gentle motion while honoring reduced-motion preferences. */
