@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { licenseCall, localPreview, sameOrigin, verifySession } from '@/lib/licensing';
+export const runtime = 'edge';
 export async function GET(request:Request){
  if(localPreview)return Response.json({license:{active:true,plan:'Local Preview'}},{headers:{'Cache-Control':'no-store'}});
  const license=await verifySession();
