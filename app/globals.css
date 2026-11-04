@@ -195,6 +195,7 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .video-summary img,.cover-button,.cover-image{width:90.2px;height:118.8px}
 .retention-video,.engagement-video{width:184.8px;height:290.4px}
 .counts svg{width:20.23px;height:20.23px}
+.counts .comment-count-icon{width:20.23px;height:20.23px;object-fit:contain}
 .phone h1,.phone h2,.phone h3,.phone h4{font-weight:980}
 .phone .analysis-tabs button{font-weight:560!important}
 .phone .analysis-tabs button[data-state=active]{font-weight:840!important}

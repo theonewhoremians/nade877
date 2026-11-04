@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, Play, Heart, MessageCircleMore, Bookmark, Info, Check, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Play, Heart, Bookmark, Info, Check, ChevronRight } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { defaultProject, projectSchema, type Project } from '@/lib/project';
@@ -381,7 +381,7 @@ export default function Studio() {
       <div className="cover-button"><button className="cover-image" onClick={() => coverInput.current?.click()} aria-label="Upload video thumbnail"><Image src={project.cover} alt={project.title} width={80} height={108} unoptimized /></button><span><InlineValue value={project.duration} label="Video duration in seconds" display={`${project.duration.toFixed(2)}s`} step="any" onSave={value => editNumber('duration', Number(value))} /></span></div>
       <input ref={coverInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { void replaceCover(e.target.files?.[0]); e.target.value = ''; }} />
       <p>Posted on <InlineValue value={project.date} label="Post date" type="text" onSave={value => editText('date', String(value))} /></p>
-      <div className="counts">{[Play, Heart, MessageCircleMore, null, Bookmark].map((Icon, index) => <div key={index}>{Icon ? <Icon aria-label={['Views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} /> : <ShareMetricIcon label="Shares" />}<InlineValue value={[project.views, project.likes, project.comments, project.shares, project.saves][index]} label={['Video views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} display={[project.views, project.likes, project.comments, project.shares, project.saves][index].toLocaleString()} onSave={value => editNumber((['views', 'likes', 'comments', 'shares', 'saves'] as NumberField[])[index], Number(value))} /></div>)}</div>
+      <div className="counts">{[Play, Heart, null, null, Bookmark].map((Icon, index) => <div key={index}>{Icon ? <Icon aria-label={['Views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} /> : index === 2 ? <Image className="comment-count-icon" src="/comment-icon.png" alt="Comments" width={20} height={20} unoptimized /> : <ShareMetricIcon label="Shares" />}<InlineValue value={[project.views, project.likes, project.comments, project.shares, project.saves][index]} label={['Video views', 'Likes', 'Comments', 'Shares', 'Saves'][index]} display={[project.views, project.likes, project.comments, project.shares, project.saves][index].toLocaleString()} onSave={value => editNumber((['views', 'likes', 'comments', 'shares', 'saves'] as NumberField[])[index], Number(value))} /></div>)}</div>
     </section>
 
     <Tabs value={tab} onValueChange={setTab}>
