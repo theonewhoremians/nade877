@@ -175,7 +175,7 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
     return <text key={`${tick.axis}-${tick.index}`} x={tick.x} y={textY} textAnchor={textAnchor}>{tick.text}</text>;
   }
 
-  return <div className={className} role="group" aria-label={label}>
+  return <div className={`${className}${editMode ? ' is-editing-graph' : ''}`} role="group" aria-label={label}>
     <svg ref={svg} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
       <g aria-hidden="true">
         {gridLevels.map((level, index) => {
@@ -186,31 +186,41 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
         <path className="trend-line" d={curvePath} />
       </g>
       <g className="trend-axis">{axisLabels.map(tick => renderAxisTick(tick))}{(!bottomLabelsEditOnly || editMode) && bottomLabels.map(tick => renderAxisTick(tick, true))}</g>
-      {coordinates.map((point, index) => <circle
-        key={index}
-        className={`trend-point ${index === highlightIndex ? 'is-highlighted' : ''}`}
-        cx={point.x}
-        cy={point.y}
-        r={editMode ? 6 : index === highlightIndex ? 3.8 : 0}
-        role={editMode ? 'slider' : undefined}
-        tabIndex={editMode ? 0 : -1}
-        aria-label={`${label}, point ${index + 1}`}
-        aria-valuemin={0}
-        aria-valuemax={maxValue}
-        aria-valuenow={points[index]}
-        aria-valuetext={`${points[index]}${maxValue === 100 || className.includes('engagement') || className.includes('retention') ? '%' : ''}`}
-        onPointerDown={editMode ? event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); updatePoint(index, valueAt(event.clientY)); } : undefined}
-        onPointerMove={editMode ? event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) updatePoint(index, valueAt(event.clientY)); } : undefined}
-        onPointerUp={editMode ? event => { const next = updatePoint(index, valueAt(event.clientY)); onChange(next); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); } : undefined}
-        onKeyDown={editMode ? event => {
-          const step = event.shiftKey ? 5 : 1;
-          if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
-          event.preventDefault();
-          const current = draft.current[index];
-          const nextValue = event.key === 'Home' ? 0 : event.key === 'End' ? maxValue : current + (event.key === 'ArrowUp' ? step : -step);
-          onChange(updatePoint(index, nextValue));
-        } : undefined}
-      />)}
+      {coordinates.map((point, index) => <g key={index}>
+        {editMode && <circle
+          className="trend-point-hit"
+          cx={point.x}
+          cy={point.y}
+          r={6}
+          strokeWidth={12}
+          role="slider"
+          tabIndex={0}
+          aria-label={`${label}, point ${index + 1}`}
+          aria-valuemin={0}
+          aria-valuemax={maxValue}
+          aria-valuenow={points[index]}
+          aria-valuetext={`${points[index]}${maxValue === 100 || className.includes('engagement') || className.includes('retention') ? '%' : ''}`}
+          onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); updatePoint(index, valueAt(event.clientY)); }}
+          onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) updatePoint(index, valueAt(event.clientY)); }}
+          onPointerUp={event => { const next = updatePoint(index, valueAt(event.clientY)); onChange(next); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
+          onPointerCancel={event => { onChange(draft.current); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
+          onKeyDown={event => {
+            const step = event.shiftKey ? 5 : 1;
+            if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            const current = draft.current[index];
+            const nextValue = event.key === 'Home' ? 0 : event.key === 'End' ? maxValue : current + (event.key === 'ArrowUp' ? step : -step);
+            onChange(updatePoint(index, nextValue));
+          }}
+        />}
+        <circle
+          className={`trend-point ${index === highlightIndex ? 'is-highlighted' : ''}`}
+          cx={point.x}
+          cy={point.y}
+          r={editMode ? 6 : index === highlightIndex ? 3.8 : 0}
+          pointerEvents={editMode ? 'none' : undefined}
+        />
+      </g>)}
     </svg>
   </div>;
 }
@@ -228,6 +238,9 @@ export default function Studio() {
   const selectedRetentionSecond = Math.min(retentionSecond, durationSeconds);
   const retentionPointIndex = Math.round(selectedRetentionSecond / durationSeconds * (project.retentionTrend.length - 1));
   const retentionPercent = project.retentionTrend[retentionPointIndex];
+  const maleEndAngle = project.male * 1.8;
+  const femaleEndAngle = (project.male + project.female) * 1.8;
+  const genderEndAngle = (project.male + project.female + project.other) * 1.8;
   const coverInput = useRef<HTMLInputElement>(null);
   const savedToastTimer = useRef<number | null>(null);
 
@@ -375,7 +388,7 @@ export default function Studio() {
             <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} staticMode onSave={value => editNumber('completion', Number(value))} /></strong></div>
             <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" staticMode onSave={value => editNumber('followers', Number(value))} /></strong></div>
           </div>
-          <EditableTrendGraph className="views-chart editable-graph" label="Video views from September 21 to September 27" values={project.viewTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('viewTrend', values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? 'viewXAxis' : 'viewYAxis', index, value)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={[{ text: project.viewYAxis[0], x: 286, y: 16, axis: 'y', index: 0 }, { text: project.viewYAxis[1], x: 286, y: 56, axis: 'y', index: 1 }, { text: project.viewYAxis[2], x: 286, y: 96, axis: 'y', index: 2 }]} bottomLabels={[{ text: project.viewXAxis[0], x: 4, axis: 'x', index: 0 }, { text: project.viewXAxis[1], x: 276, anchor: 'end', axis: 'x', index: 1 }]} />
+          <EditableTrendGraph className="views-chart editable-graph" label="Video views from September 21 to September 27" values={project.viewTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('viewTrend', values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? 'viewXAxis' : 'viewYAxis', index, value)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={[{ text: project.viewYAxis[0], x: 286, y: 16, axis: 'y', index: 0 }, { text: project.viewYAxis[1], x: 286, y: 56, axis: 'y', index: 1 }, { text: project.viewYAxis[2], x: 286, y: 96, axis: 'y', index: 2 }]} bottomLabels={[{ text: project.viewXAxis[0], x: 4, axis: 'x', index: 0 }, { text: project.viewXAxis[1], x: 276, anchor: 'end', axis: 'x', index: 1 }]} smooth area />
           <p className="chart-note">Chart shows the data trend during the first 7 days after posting.</p>
         </section>
         <section className="panel retention-panel">
@@ -400,7 +413,7 @@ export default function Studio() {
           <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.newViewers} label="New viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', Number(value))} />%</strong><strong><InlineValue value={100 - project.newViewers} label="Returning viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', 100 - Number(value))} />%</strong></div><div className="viewer-segments"><span style={{ width: `${project.newViewers}%` }} /><span style={{ width: `${100 - project.newViewers}%` }} /></div><div className="viewer-labels"><span>New viewers</span><span>Returning viewers</span></div></div>
           <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.nonFollowers} label="Non-followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', Number(value))} />%</strong><strong><InlineValue value={100 - project.nonFollowers} label="Followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', 100 - Number(value))} />%</strong></div><div className="viewer-segments"><span style={{ width: `${project.nonFollowers}%` }} /><span style={{ width: `${100 - project.nonFollowers}%` }} /></div><div className="viewer-labels"><span>Non-followers</span><span>Followers</span></div></div>
         </section>
-        <section className="panel"><h2>Gender</h2><div className="half-chart" role="img" aria-label={`Male ${project.male}%, Female ${project.female}%, Other ${project.other}%`}><div style={{ background: `conic-gradient(from -90deg,#0078d4 0deg ${project.male * 1.8}deg,#78b7e5 ${project.male * 1.8}deg ${(project.male + project.female) * 1.8}deg,#cbe3f5 ${(project.male + project.female) * 1.8}deg 180deg,transparent 180deg)` }} /></div>{[['Male', 'male', project.male, '#0078d4'], ['Female', 'female', project.female, '#78b7e5'], ['Other', 'other', project.other, '#cbe3f5']].map(([label, field, value, color]) => <div className="gender-row" key={String(field)}><i style={{ background: String(color) }} /><strong>{label}</strong><b><InlineValue value={Number(value)} label={`${label} percentage`} step="any" max={100} onSave={next => editNumber(String(field) as NumberField, Number(next))} />%</b></div>)}</section>
+        <section className="panel"><h2>Gender</h2><div className="half-chart" role="img" aria-label={`Male ${project.male}%, Female ${project.female}%, Other ${project.other}%`}><div style={{ background: `conic-gradient(from -90deg,#0078d4 0deg ${maleEndAngle}deg,#78b7e5 ${maleEndAngle}deg ${femaleEndAngle}deg,#cbe3f5 ${femaleEndAngle}deg ${genderEndAngle}deg,transparent ${genderEndAngle}deg 360deg)` }} /></div>{[['Male', 'male', project.male, '#0078d4'], ['Female', 'female', project.female, '#78b7e5'], ['Other', 'other', project.other, '#cbe3f5']].map(([label, field, value, color]) => <div className="gender-row" key={String(field)}><i style={{ background: String(color) }} /><strong>{label}</strong><b><InlineValue value={Number(value)} label={`${label} percentage`} step="any" max={100} onSave={next => editNumber(String(field) as NumberField, Number(next))} />%</b></div>)}</section>
         <section className="panel"><h2>Age</h2><Bars rows={ageLabels.map((name, index) => ({ name, value: project.ages[index] }))} onEdit={editAge} /></section>
         <section className="panel"><h2>Locations <Info /></h2><Bars rows={project.locations} onEdit={editLocation} /></section>
       </TabsContent>
