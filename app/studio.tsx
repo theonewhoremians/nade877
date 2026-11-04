@@ -10,7 +10,7 @@ import { defaultProject, projectSchema, type Project } from '@/lib/project';
 const ageLabels = ['18 - 24', '25 - 34', '35 - 44', '45 - 54', '55+'];
 const projectKey = 'analytics-studio-project-v1';
 const EditingContext = createContext(false);
-type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'averageRetention' | 'followers' | 'viewerChange' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
+type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'averageRetention' | 'followers' | 'viewerChange' | 'viewerPeriodDays' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
 type TrendField = 'viewTrend' | 'retentionTrend' | 'likesTrend';
 type AxisField = 'viewXAxis' | 'viewYAxis' | 'retentionXAxis' | 'retentionYAxis' | 'likesXAxis' | 'likesYAxis';
 type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
@@ -313,7 +313,7 @@ export default function Studio() {
 
   function editNumber(field: NumberField, value: number) {
     const percentFields: NumberField[] = ['completion', 'averageRetention', 'newViewers', 'nonFollowers', 'male', 'female', 'other'];
-    const safeValue = percentFields.includes(field) ? Math.max(0, Math.min(100, value)) : value;
+    const safeValue = percentFields.includes(field) ? Math.max(0, Math.min(100, value)) : field === 'viewerPeriodDays' ? Math.round(Math.max(1, Math.min(365, value))) : value;
     const next = { ...project, [field]: safeValue } as Project;
     if (field === 'male') { next.male = Math.min(safeValue, 100 - next.female); next.other = 100 - next.male - next.female; }
     if (field === 'female') { next.female = Math.min(safeValue, 100 - next.male); next.other = 100 - next.male - next.female; }
@@ -407,7 +407,7 @@ export default function Studio() {
         <section className="other-posts"><strong>View data for other posts</strong><div>{[1, 2, 3].map(index => <Image key={index} src={`/other-post-${index}.png`} alt="" width={34} height={34} unoptimized />)}</div></section>
       </TabsContent>
       <TabsContent value="Viewers">
-        <section className="panel total-viewers-panel"><h2>Total viewers <Info /></h2><strong className="viewer-total-value"><InlineValue value={project.totalViewers} label="Total viewers" type="text" onSave={value => editText('totalViewers', String(value))} /></strong><p className="viewer-comparison">{project.viewerChange > 0 ? '+' : ''}<InlineValue value={project.viewerChange} label="Viewer change compared with one day ago" display={project.viewerChange.toLocaleString()} onSave={value => editNumber('viewerChange', Number(value))} />&nbsp; (vs 1d ago)</p></section>
+        <section className="panel total-viewers-panel"><h2>Total viewers <Info /></h2><strong className="viewer-total-value"><InlineValue value={project.totalViewers} label="Total viewers" type="text" onSave={value => editText('totalViewers', String(value))} /></strong><p className="viewer-comparison">{project.viewerChange > 0 ? '+' : ''}<InlineValue value={project.viewerChange} label="Viewer change compared with selected period" display={project.viewerChange.toLocaleString()} onSave={value => editNumber('viewerChange', Number(value))} />&nbsp; (vs <InlineValue value={project.viewerPeriodDays} label="Comparison period in days" min={1} max={365} onSave={value => editNumber('viewerPeriodDays', Number(value))} />d ago)</p></section>
         <section className="panel viewer-types-panel"><h2>Viewer types <Info /></h2>
           <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.newViewers} label="New viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', Number(value))} />%</strong><strong><InlineValue value={100 - project.newViewers} label="Returning viewers percentage" step="any" max={100} onSave={value => editNumber('newViewers', 100 - Number(value))} />%</strong></div><div className="viewer-segments"><span style={{ width: `${project.newViewers}%` }} /><span style={{ width: `${100 - project.newViewers}%` }} /></div><div className="viewer-labels"><span>New viewers</span><span>Returning viewers</span></div></div>
           <div className="viewer-breakdown"><div className="viewer-percentages"><strong><InlineValue value={project.nonFollowers} label="Non-followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', Number(value))} />%</strong><strong><InlineValue value={100 - project.nonFollowers} label="Followers percentage" step="any" max={100} onSave={value => editNumber('nonFollowers', 100 - Number(value))} />%</strong></div><div className="viewer-segments"><span style={{ width: `${project.nonFollowers}%` }} /><span style={{ width: `${100 - project.nonFollowers}%` }} /></div><div className="viewer-labels"><span>Non-followers</span><span>Followers</span></div></div>
