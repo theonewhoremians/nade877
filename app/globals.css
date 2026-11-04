@@ -170,13 +170,14 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .editable-graph .trend-grid{fill:none;stroke:#ddd;stroke-width:1;stroke-dasharray:1 4}
 .editable-graph .trend-axis{fill:#999;font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .editable-graph .trend-area{fill:#e7f2f4}
-.editable-graph .trend-line{fill:none;stroke:#70aeba;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.editable-graph .trend-line{fill:none;stroke:#70aeba;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter}
 .editable-graph .trend-point{fill:#fff;stroke:#70aeba;stroke-width:1.5}
 .editable-graph .trend-point-hit{fill:transparent;stroke:transparent;pointer-events:all;touch-action:none;cursor:ns-resize}
+.editable-graph.is-editing-graph svg{cursor:crosshair}
 .editable-graph .trend-point-hit:focus-visible+.trend-point{stroke:#0078d4;stroke-width:3}
 .views-chart{height:136px;margin:18px -2px 0}
 .views-chart svg,.retention-chart svg{display:block;width:100%;height:100%;overflow:visible}
-.views-chart .trend-line{stroke:#729eaa;filter:drop-shadow(0 1px 1.5px #70aeba66)}
+.views-chart .trend-line{stroke:#729eaa;stroke-linecap:butt;stroke-linejoin:miter;filter:none}
 .views-chart .trend-area{fill:#e7f2f4}
 .retention-chart{height:60px;margin:0 -2px}
 .retention-chart .trend-axis{font:10px Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
@@ -186,8 +187,8 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 @media(max-width:600px){.engagement-panel{padding:16px}.engagement-video{width:168px;height:264px}}
 
 .editable-graph.is-editing-graph,.editable-graph.is-editing-graph svg{touch-action:none;overscroll-behavior:contain;user-select:none}
-.key-metrics-panel h2{font-weight:1000!important;-webkit-text-stroke:.25px currentColor}
-.key-metrics-panel .metrics strong{font-weight:910;-webkit-text-stroke:.25px currentColor}
+.key-metrics-panel h2{font-weight:1000!important;-webkit-text-stroke:.5px currentColor}
+.key-metrics-panel .metrics strong{font-weight:1000;-webkit-text-stroke:.5px currentColor}
 .half-chart>div{transition:background .24s ease}
 
 /* Larger, clearer summary elements and gentle motion while honoring reduced-motion preferences. */

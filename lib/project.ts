@@ -48,9 +48,9 @@ export const projectSchema = z.object({
   retentionYAxis: z.array(z.string().max(20)).length(2).default(['100%', '50%']),
   likesXAxis: z.array(z.string().max(20)).length(2).default(['00:00', '00:15']),
   likesYAxis: z.array(z.string().max(20)).length(4).default(['80%', '60%', '40%', '20%']),
-  viewTrend: z.array(percent).length(7).default([0, 0, 0, 0, 0, 0, 0]),
-  retentionTrend: z.array(percent).length(9).default([100, 76, 52, 39, 30, 26, 24, 23, 22]),
-  likesTrend: z.array(percent).length(11).default([0, 65, 0, 0, 0, 0, 0, 0, 0, 32, 0]),
+  viewTrend: z.array(percent).min(2).max(31).default([0, 0, 0, 0, 0, 0, 0]),
+  retentionTrend: z.array(percent).min(2).max(31).default([100, 76, 52, 39, 30, 26, 24, 23, 22]),
+  likesTrend: z.array(percent).min(2).max(31).default([0, 65, 0, 0, 0, 0, 0, 0, 0, 32, 0]),
   restricted: z.boolean(),
   cover: z.string().max(2800000).refine(value => value === '/video-cover.png' || /^data:image\/(png|jpeg|webp);base64,/.test(value)),
 }).refine(project => Math.abs(project.male + project.female + project.other - 100) < 0.2, {
