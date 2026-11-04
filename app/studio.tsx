@@ -30,16 +30,17 @@ function readProject() {
 function useSavedProject() {
   const [snapshot, setSnapshot] = useState<string | null>(null);
   useEffect(() => {
-    const update = () => setSnapshot(readProject());
+    const update = (event?: StorageEvent) => {
+      if (event && event.key !== projectKey) return;
+      setSnapshot(readProject());
+    };
     update();
     window.addEventListener('storage', update);
-    window.addEventListener(projectKey, update);
     return () => {
       window.removeEventListener('storage', update);
-      window.removeEventListener(projectKey, update);
     };
   }, []);
-  return snapshot;
+  return [snapshot, setSnapshot] as const;
 }
 function parseProject(raw: string) {
   try {
@@ -77,8 +78,8 @@ function InlineValue({ value, label, onSave, type = 'number', display, step = 1,
     }
   }, [editing]);
   function commit() {
-    setEditing(false);
     const nextDraft = input.current?.textContent ?? draft;
+    setEditing(false);
     window.getSelection()?.removeAllRanges();
     const next = type === 'number' ? Number(nextDraft) : nextDraft.trim();
     if (type === 'number' && !Number.isFinite(next)) return;
@@ -88,7 +89,7 @@ function InlineValue({ value, label, onSave, type = 'number', display, step = 1,
     setDraft(String(value));
     setEditing(true);
   }
-  if (editing && editable) return <span ref={input} className={`inline-input ${className}`} role="textbox" aria-label={label} aria-multiline="false" contentEditable suppressContentEditableWarning spellCheck={false} inputMode={type === 'number' ? 'decimal' : 'text'} onInput={e => setDraft(e.currentTarget.textContent ?? '')} onBlur={() => { if (cancel.current) { cancel.current = false; return; } commit(); }} onKeyDown={e => {
+  if (editing && editable) return <span ref={input} className={`inline-input ${className}`} role="textbox" aria-label={label} aria-multiline="false" contentEditable suppressContentEditableWarning spellCheck={false} inputMode={type === 'number' ? 'decimal' : 'text'} onBlur={() => { if (cancel.current) { cancel.current = false; return; } commit(); }} onKeyDown={e => {
     if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
     if (e.key === 'Escape') { cancel.current = true; setDraft(String(value)); window.getSelection()?.removeAllRanges(); setEditing(false); }
   }}>{draft}</span>;
@@ -226,10 +227,11 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
 }
 
 export default function Studio() {
-  const rawProject = useSavedProject();
+  const [rawProject, setRawProject] = useSavedProject();
   const project = useMemo(() => rawProject ? parseProject(rawProject) : defaultProject, [rawProject]);
   const [tab, setTab] = useState('Overview');
   const [editMode, setEditMode] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState('views');
   const [notice, setNotice] = useState('');
   const [valid, setValid] = useState(true);
   const [engagementSecond, setEngagementSecond] = useState(0);
@@ -289,9 +291,10 @@ export default function Studio() {
     if (!parsed.success) { setNotice(parsed.error.issues[0].message); return; }
     setNotice('');
     try {
-      try { window.localStorage?.setItem(projectKey, JSON.stringify(parsed.data)); }
+      const serialized = JSON.stringify(parsed.data);
+      try { window.localStorage?.setItem(projectKey, serialized); }
       catch { throw new Error('Your browser is blocking storage, so edits cannot be saved on this device.'); }
-      window.dispatchEvent(new Event(projectKey));
+      setRawProject(serialized);
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Save failed.'); }
   }
 
@@ -381,11 +384,11 @@ export default function Studio() {
       <TabsContent value="Overview">
         <section className="panel key-metrics-panel"><h2>Key metrics <Info /></h2><p className="muted">Updated on 10/20/2026.</p>
           <div className="metrics">
-            <div className="selected"><span>Video views</span><strong><InlineValue value={project.views} label="Video views" display={Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(project.views)} staticMode onSave={value => editNumber('views', Number(value))} /></strong></div>
-            <div><span>Total play time</span><strong><InlineValue value={project.playTime} label="Total play time" type="text" staticMode onSave={value => editText('playTime', String(value))} /></strong></div>
-            <div><span>Average watch time</span><strong><InlineValue value={project.watchTime} label="Average watch time in seconds" display={`${project.watchTime}s`} step="any" staticMode onSave={value => editNumber('watchTime', Number(value))} /></strong></div>
-            <div><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} staticMode onSave={value => editNumber('completion', Number(value))} /></strong></div>
-            <div><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" staticMode onSave={value => editNumber('followers', Number(value))} /></strong></div>
+            <div className={selectedMetric === 'views' ? 'selected' : ''} onPointerDownCapture={() => setSelectedMetric('views')} onFocusCapture={() => setSelectedMetric('views')}><span>Video views</span><strong><InlineValue value={project.views} label="Video views" display={Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(project.views)} staticMode onSave={value => editNumber('views', Number(value))} /></strong></div>
+            <div className={selectedMetric === 'playTime' ? 'selected' : ''} onPointerDownCapture={() => setSelectedMetric('playTime')} onFocusCapture={() => setSelectedMetric('playTime')}><span>Total play time</span><strong><InlineValue value={project.playTime} label="Total play time" type="text" staticMode onSave={value => editText('playTime', String(value))} /></strong></div>
+            <div className={selectedMetric === 'watchTime' ? 'selected' : ''} onPointerDownCapture={() => setSelectedMetric('watchTime')} onFocusCapture={() => setSelectedMetric('watchTime')}><span>Average watch time</span><strong><InlineValue value={project.watchTime} label="Average watch time in seconds" display={`${project.watchTime}s`} step="any" staticMode onSave={value => editNumber('watchTime', Number(value))} /></strong></div>
+            <div className={selectedMetric === 'completion' ? 'selected' : ''} onPointerDownCapture={() => setSelectedMetric('completion')} onFocusCapture={() => setSelectedMetric('completion')}><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} staticMode onSave={value => editNumber('completion', Number(value))} /></strong></div>
+            <div className={selectedMetric === 'followers' ? 'selected' : ''} onPointerDownCapture={() => setSelectedMetric('followers')} onFocusCapture={() => setSelectedMetric('followers')}><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" staticMode onSave={value => editNumber('followers', Number(value))} /></strong></div>
           </div>
           <EditableTrendGraph className="views-chart editable-graph" label="Video views from September 21 to September 27" values={project.viewTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('viewTrend', values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? 'viewXAxis' : 'viewYAxis', index, value)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={[{ text: project.viewYAxis[0], x: 286, y: 16, axis: 'y', index: 0 }, { text: project.viewYAxis[1], x: 286, y: 56, axis: 'y', index: 1 }, { text: project.viewYAxis[2], x: 286, y: 96, axis: 'y', index: 2 }]} bottomLabels={[{ text: project.viewXAxis[0], x: 4, axis: 'x', index: 0 }, { text: project.viewXAxis[1], x: 276, anchor: 'end', axis: 'x', index: 1 }]} smooth area />
           <p className="chart-note">Chart shows the data trend during the first 7 days after posting.</p>
