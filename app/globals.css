@@ -177,8 +177,6 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .editable-graph .trend-point-hit:focus-visible+.trend-point{stroke:#0078d4;stroke-width:3}
 .views-chart{height:136px;margin:18px -2px 0}
 .views-chart svg,.retention-chart svg{display:block;width:100%;height:100%;overflow:visible}
-.metric-sparkline{height:34px;margin:6px -2px -3px}
-.metric-sparkline svg{display:block;width:100%;height:100%;overflow:visible}
 .views-chart .trend-line{stroke:#729eaa;stroke-linecap:butt;stroke-linejoin:miter;filter:none}
 .views-chart .trend-area{fill:#e7f2f4}
 .retention-chart{height:60px;margin:0 -2px}
