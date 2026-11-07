@@ -268,13 +268,27 @@ export default function Studio() {
 
   useEffect(() => {
     let active = true;
-    async function check() {
-      try { if (!(await fetch('/api/license', { cache: 'no-store' })).ok && active) setValid(false); }
-      catch { if (active) setValid(false); }
+    let checking = false;
+    let revoked = false;
+    function revokeSession() {
+      if (!active || revoked) return;
+      revoked = true;
+      setValid(false);
+      void fetch('/api/license', { method: 'DELETE', cache: 'no-store' }).catch(() => {});
     }
+    async function check() {
+      if (!active || revoked || checking) return;
+      checking = true;
+      try { if (!(await fetch('/api/license', { cache: 'no-store' })).ok) revokeSession(); }
+      catch { revokeSession(); }
+      finally { checking = false; }
+    }
+    function checkWhenVisible() { if (document.visibilityState === 'visible') void check(); }
     void check();
-    const timer = setInterval(check, 60000);
-    return () => { active = false; clearInterval(timer); };
+    const timer = setInterval(() => void check(), 10000);
+    window.addEventListener('focus', checkWhenVisible);
+    document.addEventListener('visibilitychange', checkWhenVisible);
+    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', checkWhenVisible); document.removeEventListener('visibilitychange', checkWhenVisible); };
   }, []);
 
   useEffect(() => {

@@ -92,10 +92,10 @@ export default function Admin() {
         setLatestCode(result.license.access_code);
         setNotice({ kind: 'success', message: 'Access code created. Copy it and share it with its owner.' });
       } else if (action === 'delete') {
-        setNotice({ kind: 'success', message: 'Access code deleted. Its user will be denied at their next access check.' });
+        setNotice({ kind: 'success', message: 'Access code deleted. Any open session will be stopped at its next check.' });
       } else if (action === 'reset') {
         if (!result.license || result.license.device_id !== null) throw new Error('The device link was not cleared. Please retry.');
-        setNotice({ kind: 'success', message: 'Device link reset. This code can now be activated on another device.' });
+        setNotice({ kind: 'success', message: 'Device link reset. Any open session will be stopped, and this code can be activated on another device.' });
       } else {
         setNotice({ kind: 'success', message: 'Access code updated.' });
       }
