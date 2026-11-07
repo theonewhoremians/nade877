@@ -279,8 +279,10 @@ export default function Studio() {
     async function check() {
       if (!active || revoked || checking) return;
       checking = true;
-      try { if (!(await fetch('/api/license', { cache: 'no-store' })).ok) revokeSession(); }
-      catch { revokeSession(); }
+      try {
+        const response = await fetch('/api/license', { cache: 'no-store' });
+        if (response.status === 401 || response.status === 403) revokeSession();
+      } catch { /* Retry on the next timer or focus event if the service is unreachable. */ }
       finally { checking = false; }
     }
     function checkWhenVisible() { if (document.visibilityState === 'visible') void check(); }

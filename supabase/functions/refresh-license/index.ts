@@ -9,4 +9,4 @@ Deno.serve(async request => { const preflight = options(request); if (preflight)
   if (!isUsable(license)) return json({ error: license.active ? "This license has expired." : "This license has been disabled." }, 403);
   if (license.device_id !== device) return json({ error: "License already activated on another device." }, 409);
   return json({ token: await signLicense(license), expiresAt: new Date(Date.now() + 86400000).toISOString(), license: publicLicense(license) });
-} catch (error) { return json({ error: safeErrorMessage(error, "Refresh failed.") }, 400); } });
+} catch (error) { const message = safeErrorMessage(error, "Refresh failed."); return json({ error: message }, message === "Refresh failed." ? 503 : 400); } });
