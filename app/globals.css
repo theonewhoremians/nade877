@@ -146,10 +146,11 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .key-metrics-panel .metrics strong .inline-value{font-size:inherit;font-weight:inherit;line-height:inherit}
 .viewers-content>.viewer-age-panel,.viewers-content>.viewer-locations-panel{padding:11.2px;margin:4.2px 4.2px 5.6px;border-radius:7.7px}
 .viewers-content .viewer-age-panel h2 svg,.viewers-content .viewer-locations-panel h2 svg{width:9.8px;height:9.8px}
-.viewers-content .bar-list{gap:16.8px;margin-top:18.2px}
-.viewers-content .bar-label{font-size:12.6px;margin-bottom:4.8px;gap:8.4px}
-.viewers-content .bar-list .demographic-bar{height:8.4px!important}
-.viewers-content .viewer-age-panel h2,.viewers-content .viewer-locations-panel h2{font-size:17px}
+.viewers-content .viewer-age-panel .bar-list,.viewers-content .viewer-locations-panel .bar-list{gap:16.8px;margin-top:18.2px}
+.viewers-content .viewer-age-panel .bar-label,.viewers-content .viewer-locations-panel .bar-label{font-size:12.6px;margin-bottom:4.8px;gap:8.4px}
+.viewers-content .viewer-age-panel .bar-label>b,.viewers-content .viewer-locations-panel .bar-label>b{display:inline-flex;align-items:center;justify-content:flex-end;width:4.5em;flex:none;white-space:nowrap}
+.viewers-content .viewer-age-panel .demographic-bar,.viewers-content .viewer-locations-panel .demographic-bar{width:100%;height:9.24px!important}
+.viewers-content .viewer-age-panel h2,.viewers-content .viewer-locations-panel h2{font-size:17px;line-height:1.25;margin:2px 0 4px;gap:5px}
 .engagement-panel{padding:16px;margin:6px 6px 8px}
 .engagement-panel h2{font-size:17px;line-height:22px;font-weight:700;gap:6px;margin:2px 0 4px}
 .engagement-panel h2 svg{width:20px!important;height:20px!important;stroke-width:1.8}
