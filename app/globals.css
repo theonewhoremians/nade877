@@ -149,7 +149,7 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .viewers-content .viewer-age-panel .bar-list,.viewers-content .viewer-locations-panel .bar-list{gap:16.8px;margin-top:18.2px}
 .viewers-content .viewer-age-panel .bar-label,.viewers-content .viewer-locations-panel .bar-label{font-size:12.6px;margin-bottom:4.8px;gap:8.4px}
 .viewers-content .viewer-age-panel .bar-label>b,.viewers-content .viewer-locations-panel .bar-label>b{display:inline-flex;align-items:center;justify-content:flex-end;width:4.5em;flex:none;white-space:nowrap}
-.viewers-content .viewer-age-panel .demographic-bar,.viewers-content .viewer-locations-panel .demographic-bar{width:100%;height:9.24px!important}
+.viewers-content .viewer-age-panel .demographic-bar,.viewers-content .viewer-locations-panel .demographic-bar{width:100%;height:10.164px!important}
 .viewers-content .viewer-age-panel h2,.viewers-content .viewer-locations-panel h2{font-size:17px;line-height:1.25;margin:2px 0 4px;gap:5px}
 .locations-heading-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .locations-heading-row h2{min-width:0}
