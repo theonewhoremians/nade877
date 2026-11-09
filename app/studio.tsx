@@ -98,8 +98,9 @@ function InlineValue({ value, label, onSave, type = 'number', display, step = 1,
   return <button type="button" className={`inline-value ${className}`} aria-label={`Edit ${label}: ${display ?? value}`} onClick={e => { e.stopPropagation(); beginEdit(); }}>{display ?? value}</button>;
 }
 
-function Bars({ rows, onEdit }: { rows: { name: string; value: number }[]; onEdit: (index: number, value: number) => void }) {
-  return <div className="bar-list">{rows.map((row, index) => <div key={index}><div className="bar-label"><span>{row.name}</span><b><InlineValue value={row.value} label={`${row.name} viewers percentage`} step="any" max={100} onSave={value => onEdit(index, Number(value))} />%</b></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
+function Bars({ rows, onEdit, onNameEdit, onDelete }: { rows: { name: string; value: number }[]; onEdit: (index: number, value: number) => void; onNameEdit?: (index: number, name: string) => void; onDelete?: (index: number) => void }) {
+  const canManageNames = Boolean(onNameEdit && onDelete);
+  return <div className="bar-list">{rows.map((row, index) => <div key={`${row.name}-${index}`}><div className="bar-label">{canManageNames ? <span className="location-bar-title"><button type="button" className="location-delete-button" aria-label={`Delete ${row.name} location`} onClick={event => { event.stopPropagation(); onDelete?.(index); }}>Delete</button><InlineValue value={row.name} label={`Location title: ${row.name}`} type="text" onSave={value => onNameEdit?.(index, String(value))} /></span> : <span>{row.name}</span>}<b><InlineValue value={row.value} label={`${row.name} viewers percentage`} step="any" max={100} onSave={value => onEdit(index, Number(value))} />%</b></div><Progress value={row.value} aria-label={`${row.name}: ${row.value}%`} className="demographic-bar" /></div>)}</div>;
 }
 
 function AnalyticsBars({ rows, onEdit }: { rows: { name: string; value: number }[]; onEdit: (index: number, value: number) => void }) {
@@ -241,6 +242,7 @@ export default function Studio() {
   const [valid, setValid] = useState(true);
   const [engagementSecond, setEngagementSecond] = useState(0);
   const [retentionSecond, setRetentionSecond] = useState(1);
+  const [manageLocations, setManageLocations] = useState(false);
   const durationSeconds = Math.max(1, Math.floor(project.duration));
   const selectedRetentionSecond = Math.min(retentionSecond, durationSeconds);
   const retentionPointIndex = Math.round(selectedRetentionSecond / durationSeconds * (project.retentionTrend.length - 1));
@@ -250,6 +252,7 @@ export default function Studio() {
   const genderEndAngle = (project.male + project.female + project.other) * 1.8;
   const coverInput = useRef<HTMLInputElement>(null);
   const savedToastTimer = useRef<number | null>(null);
+  const lastLocationTitleTap = useRef(0);
 
   useEffect(() => () => {
     if (savedToastTimer.current !== null) window.clearTimeout(savedToastTimer.current);
@@ -322,6 +325,7 @@ export default function Studio() {
   function toggleEditMode() {
     if (savedToastTimer.current !== null) window.clearTimeout(savedToastTimer.current);
     savedToastTimer.current = null;
+    if (editMode) setManageLocations(false);
     if (editMode && !notice) {
       const savedMessage = 'Saved on this device.';
       setNotice(savedMessage);
@@ -359,6 +363,33 @@ export default function Studio() {
     const available = Math.max(0, 100 - otherTotal);
     const locations = project.locations.map((location, i) => i === index ? { ...location, value: Math.min(Math.max(0, value), available) } : location);
     void persist({ ...project, locations });
+  }
+  function editLocationName(index: number, name: string) {
+    const cleanedName = name.trim().slice(0, 60);
+    if (!cleanedName) { setNotice('Location title cannot be empty.'); return; }
+    const locations = project.locations.map((location, i) => i === index ? { ...location, name: cleanedName } : location);
+    void persist({ ...project, locations });
+  }
+  function addLocation() {
+    if (project.locations.length >= 15) return;
+    const names = new Set(project.locations.map(location => location.name));
+    let name = 'New location';
+    let suffix = 2;
+    while (names.has(name)) name = `New location ${suffix++}`;
+    void persist({ ...project, locations: [...project.locations, { name, value: 0 }] });
+  }
+  function deleteLocation(index: number) {
+    void persist({ ...project, locations: project.locations.filter((_, i) => i !== index) });
+  }
+  function handleLocationTitleTap() {
+    if (!editMode) return;
+    const now = Date.now();
+    if (now - lastLocationTitleTap.current < 450) {
+      lastLocationTitleTap.current = 0;
+      setManageLocations(current => !current);
+    } else {
+      lastLocationTitleTap.current = now;
+    }
   }
   function editAnalyticsRow(field: 'trafficSources' | 'searchQueries', index: number, value: number) {
     const rows = project[field].map((row, i) => i === index ? { ...row, value: Math.max(0, Math.min(100, value)) } : row);
@@ -438,7 +469,7 @@ export default function Studio() {
         </section>
         <section className="panel"><h2>Gender</h2><div className="half-chart" role="img" aria-label={`Male ${project.male}%, Female ${project.female}%, Other ${project.other}%`}><div style={{ background: `conic-gradient(from -90deg,#0078d4 0deg ${maleEndAngle}deg,#78b7e5 ${maleEndAngle}deg ${femaleEndAngle}deg,#cbe3f5 ${femaleEndAngle}deg ${genderEndAngle}deg,transparent ${genderEndAngle}deg 360deg)` }} /></div>{[['Male', 'male', project.male, '#0078d4'], ['Female', 'female', project.female, '#78b7e5'], ['Other', 'other', project.other, '#cbe3f5']].map(([label, field, value, color]) => <div className="gender-row" key={String(field)}><i style={{ background: String(color) }} /><strong>{label}</strong><b><InlineValue value={Number(value)} label={`${label} percentage`} step="any" max={100} onSave={next => editNumber(String(field) as NumberField, Number(next))} />%</b></div>)}</section>
         <section className="panel viewer-age-panel"><h2>Age</h2><Bars rows={ageLabels.map((name, index) => ({ name, value: project.ages[index] }))} onEdit={editAge} /></section>
-        <section className="panel viewer-locations-panel"><h2>Locations <Info /></h2><Bars rows={project.locations} onEdit={editLocation} /></section>
+        <section className="panel viewer-locations-panel"><div className="locations-heading-row"><h2 className={editMode ? 'locations-heading-editable' : ''} tabIndex={editMode ? 0 : undefined} role={editMode ? 'button' : undefined} aria-expanded={editMode ? manageLocations : undefined} aria-label={editMode ? 'Locations. Double-tap to show add and delete controls.' : undefined} onClick={handleLocationTitleTap} onKeyDown={event => { if (editMode && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setManageLocations(current => !current); } }}>Locations <Info /></h2>{editMode && manageLocations && <button type="button" className="location-add-button" onClick={addLocation} disabled={project.locations.length >= 15}>Add</button>}</div><Bars rows={project.locations} onEdit={editLocation} onNameEdit={editMode && manageLocations ? editLocationName : undefined} onDelete={editMode && manageLocations ? deleteLocation : undefined} /></section>
       </TabsContent>
       <TabsContent value="Engagement">
         <section className="panel engagement-panel engagement-words-panel"><h2>Top words used in comments <Info /></h2><p>Top word insights are not ready yet. Please check back later.</p></section>

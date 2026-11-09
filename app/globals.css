@@ -151,6 +151,15 @@ body{font-family:Roboto,"Segoe UI",Arial,Helvetica,sans-serif}
 .viewers-content .viewer-age-panel .bar-label>b,.viewers-content .viewer-locations-panel .bar-label>b{display:inline-flex;align-items:center;justify-content:flex-end;width:4.5em;flex:none;white-space:nowrap}
 .viewers-content .viewer-age-panel .demographic-bar,.viewers-content .viewer-locations-panel .demographic-bar{width:100%;height:9.24px!important}
 .viewers-content .viewer-age-panel h2,.viewers-content .viewer-locations-panel h2{font-size:17px;line-height:1.25;margin:2px 0 4px;gap:5px}
+.locations-heading-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.locations-heading-row h2{min-width:0}
+.locations-heading-editable{cursor:pointer;touch-action:manipulation;user-select:none}
+.location-add-button,.location-delete-button{width:auto;border:1px solid #d7d7d7;border-radius:5px;background:#fff;color:#087dd1;font:inherit;line-height:1.2;white-space:nowrap}
+.location-add-button{padding:4px 9px;font-size:12px}
+.location-add-button:disabled{opacity:.45;cursor:not-allowed}
+.location-bar-title{display:flex;align-items:center;gap:6px;min-width:0;flex:1}
+.location-bar-title>.inline-value,.location-bar-title>.inline-input{min-width:0;text-align:left;overflow-wrap:anywhere}
+.location-delete-button{padding:2px 5px;color:#b42318;font-size:10px}
 .engagement-panel{padding:16px;margin:6px 6px 8px}
 .engagement-panel h2{font-size:17px;line-height:22px;font-weight:700;gap:6px;margin:2px 0 4px}
 .engagement-panel h2 svg{width:20px!important;height:20px!important;stroke-width:1.8}

@@ -26,7 +26,7 @@ export const projectSchema = z.object({
   female: percent,
   other: percent,
   ages: z.array(percent).length(5),
-  locations: z.array(analyticsRow).min(1).max(15),
+  locations: z.array(analyticsRow).max(15),
   trafficSources: z.array(analyticsRow).length(6).default([
     { name: 'For You', value: 99.5 },
     { name: 'Personal profile', value: 0.4 },
