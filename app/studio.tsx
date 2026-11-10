@@ -11,8 +11,9 @@ const ageLabels = ['18 - 24', '25 - 34', '35 - 44', '45 - 54', '55+'];
 const projectKey = 'analytics-studio-project-v1';
 const EditingContext = createContext(false);
 type NumberField = 'duration' | 'views' | 'likes' | 'comments' | 'shares' | 'saves' | 'watchTime' | 'completion' | 'averageRetention' | 'followers' | 'viewerChange' | 'viewerPeriodDays' | 'newViewers' | 'nonFollowers' | 'male' | 'female' | 'other';
-type TrendField = 'viewTrend' | 'retentionTrend' | 'likesTrend';
-type AxisField = 'viewXAxis' | 'viewYAxis' | 'retentionXAxis' | 'retentionYAxis' | 'likesXAxis' | 'likesYAxis';
+type MetricKey = 'views' | 'playTime' | 'watchTime' | 'completion' | 'followers';
+type TrendField = 'viewTrend' | 'playTimeTrend' | 'watchTimeTrend' | 'completionTrend' | 'followersTrend' | 'retentionTrend' | 'likesTrend';
+type AxisField = 'viewXAxis' | 'viewYAxis' | 'playTimeXAxis' | 'playTimeYAxis' | 'watchTimeXAxis' | 'watchTimeYAxis' | 'completionXAxis' | 'completionYAxis' | 'followersXAxis' | 'followersYAxis' | 'retentionXAxis' | 'retentionYAxis' | 'likesXAxis' | 'likesYAxis';
 type TextField = 'title' | 'date' | 'playTime' | 'totalViewers';
 
 function StudioBadgeIcon() {
@@ -235,9 +236,16 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
 export default function Studio() {
   const [rawProject, setRawProject] = useSavedProject();
   const project = useMemo(() => rawProject ? parseProject(rawProject) : defaultProject, [rawProject]);
+  const selectedGraph = {
+    views: { title: 'Video views', values: project.viewTrend, xAxis: project.viewXAxis, yAxis: project.viewYAxis, trendField: 'viewTrend' as const, xAxisField: 'viewXAxis' as const, yAxisField: 'viewYAxis' as const },
+    playTime: { title: 'Total play time', values: project.playTimeTrend, xAxis: project.playTimeXAxis, yAxis: project.playTimeYAxis, trendField: 'playTimeTrend' as const, xAxisField: 'playTimeXAxis' as const, yAxisField: 'playTimeYAxis' as const },
+    watchTime: { title: 'Average watch time', values: project.watchTimeTrend, xAxis: project.watchTimeXAxis, yAxis: project.watchTimeYAxis, trendField: 'watchTimeTrend' as const, xAxisField: 'watchTimeXAxis' as const, yAxisField: 'watchTimeYAxis' as const },
+    completion: { title: 'Watched full video', values: project.completionTrend, xAxis: project.completionXAxis, yAxis: project.completionYAxis, trendField: 'completionTrend' as const, xAxisField: 'completionXAxis' as const, yAxisField: 'completionYAxis' as const },
+    followers: { title: 'New followers', values: project.followersTrend, xAxis: project.followersXAxis, yAxis: project.followersYAxis, trendField: 'followersTrend' as const, xAxisField: 'followersXAxis' as const, yAxisField: 'followersYAxis' as const },
+  }[selectedMetric];
   const [tab, setTab] = useState('Overview');
   const [editMode, setEditMode] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState('views');
+  const [selectedMetric, setSelectedMetric] = useState<MetricKey>('views');
   const [notice, setNotice] = useState('');
   const [valid, setValid] = useState(true);
   const [engagementSecond, setEngagementSecond] = useState(0);
@@ -442,7 +450,7 @@ export default function Studio() {
             <div className={selectedMetric === 'completion' ? 'selected' : ''} onPointerDownCapture={() => setSelectedMetric('completion')} onFocusCapture={() => setSelectedMetric('completion')}><span>Watched full video</span><strong><InlineValue value={project.completion} label="Watched full video percentage" display={`${project.completion}%`} step="any" max={100} staticMode onSave={value => editNumber('completion', Number(value))} /></strong></div>
             <div className={selectedMetric === 'followers' ? 'selected' : ''} onPointerDownCapture={() => setSelectedMetric('followers')} onFocusCapture={() => setSelectedMetric('followers')}><span>New followers</span><strong><InlineValue value={project.followers} label="New followers" staticMode onSave={value => editNumber('followers', Number(value))} /></strong></div>
           </div>
-          <EditableTrendGraph className="views-chart editable-graph" label="Video views from September 21 to September 27" values={project.viewTrend} maxValue={100} editMode={editMode} onChange={values => editTrend('viewTrend', values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? 'viewXAxis' : 'viewYAxis', index, value)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={[{ text: project.viewYAxis[0], x: 286, y: 16, axis: 'y', index: 0 }, { text: project.viewYAxis[1], x: 286, y: 56, axis: 'y', index: 1 }, { text: project.viewYAxis[2], x: 286, y: 96, axis: 'y', index: 2 }]} bottomLabels={[{ text: project.viewXAxis[0], x: 4, axis: 'x', index: 0 }, { text: project.viewXAxis[1], x: 276, anchor: 'end', axis: 'x', index: 1 }]} area />
+          <EditableTrendGraph className="views-chart editable-graph" label={`${selectedGraph.title} from ${selectedGraph.xAxis[0]} to ${selectedGraph.xAxis[1]}`} values={selectedGraph.values} maxValue={100} editMode={editMode} onChange={values => editTrend(selectedGraph.trendField, values)} onAxisEdit={(axis, index, value) => editAxis(axis === 'x' ? selectedGraph.xAxisField : selectedGraph.yAxisField, index, value)} width={320} height={160} plot={{ left: 4, right: 276, top: 12, bottom: 132 }} gridLevels={[1, 2 / 3, 1 / 3, 0]} axisLabels={selectedGraph.yAxis.map((text, index) => ({ text, x: 286, y: [16, 56, 96][index], axis: 'y' as const, index }))} bottomLabels={[{ text: selectedGraph.xAxis[0], x: 4, axis: 'x', index: 0 }, { text: selectedGraph.xAxis[1], x: 276, anchor: 'end', axis: 'x', index: 1 }]} area />
           <p className="chart-note">Chart shows the data trend during the first 7 days after posting.</p>
         </section>
         <section className="panel retention-panel">
