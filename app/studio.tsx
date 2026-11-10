@@ -236,6 +236,9 @@ function EditableTrendGraph({ values, maxValue, editMode, onChange, className, l
 export default function Studio() {
   const [rawProject, setRawProject] = useSavedProject();
   const project = useMemo(() => rawProject ? parseProject(rawProject) : defaultProject, [rawProject]);
+  const [tab, setTab] = useState('Overview');
+  const [editMode, setEditMode] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<MetricKey>('views');
   const selectedGraph = {
     views: { title: 'Video views', values: project.viewTrend, xAxis: project.viewXAxis, yAxis: project.viewYAxis, trendField: 'viewTrend' as const, xAxisField: 'viewXAxis' as const, yAxisField: 'viewYAxis' as const },
     playTime: { title: 'Total play time', values: project.playTimeTrend, xAxis: project.playTimeXAxis, yAxis: project.playTimeYAxis, trendField: 'playTimeTrend' as const, xAxisField: 'playTimeXAxis' as const, yAxisField: 'playTimeYAxis' as const },
@@ -243,9 +246,6 @@ export default function Studio() {
     completion: { title: 'Watched full video', values: project.completionTrend, xAxis: project.completionXAxis, yAxis: project.completionYAxis, trendField: 'completionTrend' as const, xAxisField: 'completionXAxis' as const, yAxisField: 'completionYAxis' as const },
     followers: { title: 'New followers', values: project.followersTrend, xAxis: project.followersXAxis, yAxis: project.followersYAxis, trendField: 'followersTrend' as const, xAxisField: 'followersXAxis' as const, yAxisField: 'followersYAxis' as const },
   }[selectedMetric];
-  const [tab, setTab] = useState('Overview');
-  const [editMode, setEditMode] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<MetricKey>('views');
   const [notice, setNotice] = useState('');
   const [valid, setValid] = useState(true);
   const [engagementSecond, setEngagementSecond] = useState(0);
